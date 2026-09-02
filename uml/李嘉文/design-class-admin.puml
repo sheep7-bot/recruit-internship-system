@@ -1,0 +1,80 @@
+@startuml 李嘉文-管理端设计类图
+skinparam defaultFontName "Microsoft YaHei"
+skinparam classAttributeIconSize 0
+skinparam defaultFontSize 14
+
+package "Controller 控制层" {
+  class AdminController {
+    +companies(approved) : Result
+    +auditCompany(companyId, pass) : Result
+    +jobs(status) : Result
+    +auditJob(jobId, pass) : Result
+    +users() : Result
+    +updateUserStatus(userId, status) : Result
+    +stats() : Result
+  }
+}
+
+package "Service 业务层" {
+  class AdminServiceImpl {
+    +listCompanies(approved) : List<Company>
+    +auditCompany(companyId, pass) : void
+    +listUsers() : List<User>
+    +updateUserStatus(userId, status) : void
+    +stats() : Map
+  }
+  class JobServiceImpl {
+    +listByStatus(status) : List<Map>
+    +audit(jobId, pass) : void
+  }
+}
+
+package "Mapper 数据访问层" {
+  class CompanyMapper
+  class JobMapper
+  class UserMapper
+  class ApplyMapper
+  class ResumeMapper
+}
+
+package "entity 实体层" {
+  class Company {
+    -id : Long
+    -userId : Long
+    -name : String
+    -approved : Integer
+  }
+  class Job {
+    -id : Long
+    -companyId : Long
+    -title : String
+    -status : Integer
+  }
+  class User {
+    -id : Long
+    -username : String
+    -role : String
+    -status : Integer
+  }
+  class Apply {
+    -id : Long
+    -status : String
+  }
+  class Resume {
+    -id : Long
+  }
+}
+
+class "StringRedisTemplate（清缓存）" as redis
+
+AdminController --> AdminServiceImpl
+AdminController --> JobServiceImpl
+
+AdminServiceImpl --> CompanyMapper
+AdminServiceImpl --> JobMapper
+AdminServiceImpl --> UserMapper
+AdminServiceImpl --> ApplyMapper
+AdminServiceImpl --> ResumeMapper
+JobServiceImpl --> JobMapper
+JobServiceImpl --> redis : evictJobCache
+@enduml

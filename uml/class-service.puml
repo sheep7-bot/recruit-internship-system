@@ -1,0 +1,86 @@
+@startuml 控制层与业务层类图
+skinparam defaultFontName "Microsoft YaHei"
+skinparam classAttributeIconSize 0
+skinparam defaultFontSize 15
+
+package "Controller 控制层" {
+  class AuthController {
+    +login(username, password) : Result
+    +register(user) : Result
+  }
+  class StudentController {
+    +uploadResume(resume) : Result
+    +searchJobs(keyword, city, type) : Result
+    +applyJob(jobId) : Result
+    +listMyApplies(studentId) : Result
+  }
+  class CompanyController {
+    +publishJob(job) : Result
+    +offlineJob(jobId) : Result
+    +listApplies(jobId) : Result
+    +invite(applyId) : Result
+  }
+  class AdminController {
+    +auditCompany(companyId, pass) : Result
+    +auditJob(jobId, pass) : Result
+    +listUsers() : Result
+    +statistics() : Result
+  }
+  class AiController {
+    +chat(question) : Map
+    +parseResume(resumeId) : Result
+    +filterCandidates(jobId) : Result
+  }
+  AuthController -[hidden]d- StudentController
+  StudentController -[hidden]d- CompanyController
+  CompanyController -[hidden]d- AdminController
+  AdminController -[hidden]d- AiController
+}
+
+package "Service 业务层" {
+  class UserService {
+    +login(username, password) : User
+    +register(user) : void
+    +listAll() : List<User>
+  }
+  class ResumeService {
+    +save(resume) : void
+    +getByUserId(userId) : Resume
+  }
+  class JobService {
+    +publish(job) : void
+    +search(keyword, city, type) : List<Job>
+    +audit(jobId, pass) : void
+  }
+  class ApplyService {
+    +apply(studentId, jobId) : void
+    +listByJob(jobId) : List<Apply>
+    +updateStatus(applyId, status) : void
+  }
+  class AiResumeService {
+    -promptTemplate : String
+    +parse(content) : Resume
+  }
+  class AiMatchService {
+    +filter(jobId) : List<AiScore>
+    +score(resume, job) : AiScore
+  }
+  UserService -[hidden]d- ResumeService
+  ResumeService -[hidden]d- JobService
+  JobService -[hidden]d- ApplyService
+  ApplyService -[hidden]d- AiResumeService
+  AiResumeService -[hidden]d- AiMatchService
+}
+
+AuthController --> UserService
+StudentController --> ResumeService
+StudentController --> JobService
+StudentController --> ApplyService
+CompanyController --> JobService
+CompanyController --> ApplyService
+CompanyController --> AiMatchService
+AdminController --> UserService
+AdminController --> JobService
+AiController --> AiResumeService
+AiController --> AiMatchService
+@enduml

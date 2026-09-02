@@ -1,0 +1,25 @@
+@startuml 平台数据统计核心算法流程图
+skinparam defaultFontName "Microsoft YaHei"
+skinparam activityDiamondFontSize 13
+skinparam activityFontSize 13
+skinparam defaultTextAlignment center
+
+start
+:输入 无(统计全平台);
+:创建 Map stats;
+:selectCount(role=student) → studentCount;
+:selectCount(t_company) → companyCount;
+:selectCount(status=1) → jobCount;
+:selectCount(t_apply) → applyCount;
+:selectCount(t_resume) → resumeCount;
+:selectCount(approved=0) → pendingCompanyCount;
+:selectCount(status=0) → pendingJobCount;
+if (任一统计失败?) then (是)
+  :全局异常处理器统一返回;
+  stop
+else (否)
+endif
+:组装 stats Map 返回;
+:前端 ECharts 渲染;
+stop
+@enduml

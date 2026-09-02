@@ -1,0 +1,125 @@
+@startuml 数据访问层与实体层类图
+skinparam defaultFontName "Microsoft YaHei"
+skinparam classAttributeIconSize 0
+skinparam defaultFontSize 15
+
+package "Service 业务层（数据访问依赖）" {
+  class UserService
+  class ResumeService
+  class JobService
+  class ApplyService
+  class AiResumeService
+  class AiMatchService
+  UserService -[hidden]d- ResumeService
+  ResumeService -[hidden]d- JobService
+  JobService -[hidden]d- ApplyService
+  ApplyService -[hidden]d- AiResumeService
+  AiResumeService -[hidden]d- AiMatchService
+}
+
+package "Mapper 数据访问层" {
+  class UserMapper {
+    +selectOne(wrapper) : User
+    +selectList(wrapper) : List<User>
+  }
+  class CompanyMapper
+  class ResumeMapper
+  class JobMapper
+  class ApplyMapper
+  class AiScoreMapper
+  UserMapper -[hidden]d- CompanyMapper
+  CompanyMapper -[hidden]d- ResumeMapper
+  ResumeMapper -[hidden]d- JobMapper
+  JobMapper -[hidden]d- ApplyMapper
+  ApplyMapper -[hidden]d- AiScoreMapper
+}
+
+package "entity 实体层" {
+  class User {
+    -id : Long
+    -username : String
+    -password : String
+    -role : String
+    -name : String
+    -phone : String
+    -status : Integer
+    -createTime : LocalDateTime
+  }
+  class Company {
+    -id : Long
+    -userId : Long
+    -name : String
+    -industry : String
+    -scale : String
+    -contact : String
+    -approved : Integer
+  }
+  class Resume {
+    -id : Long
+    -userId : Long
+    -name : String
+    -school : String
+    -edu : String
+    -age : Integer
+    -skills : String
+    -experience : String
+    -content : String
+  }
+  class Job {
+    -id : Long
+    -companyId : Long
+    -title : String
+    -city : String
+    -salary : String
+    -type : String
+    -skills : String
+    -eduReq : String
+    -status : Integer
+  }
+  class Apply {
+    -id : Long
+    -studentId : Long
+    -jobId : Long
+    -status : String
+    -applyTime : LocalDateTime
+  }
+  class AiScore {
+    -id : Long
+    -applyId : Long
+    -score : Integer
+    -reason : String
+  }
+  User -[hidden]r- Company
+  Company -[hidden]d- Resume
+  Resume -[hidden]r- Job
+  Job -[hidden]d- Apply
+  Apply -[hidden]r- AiScore
+}
+
+package "AI 服务" {
+  class "ChatClient（Spring AI）" as ChatClient {
+    +prompt(text) : Request
+    +call() : Response
+  }
+  class "通义千问 API" as Qwen
+  ChatClient -[hidden]d- Qwen
+}
+
+UserService --> UserMapper
+ResumeService --> ResumeMapper
+JobService --> JobMapper
+ApplyService --> ApplyMapper
+AiResumeService --> ResumeMapper
+AiMatchService --> ApplyMapper
+AiMatchService --> AiScoreMapper
+
+UserMapper --> User
+CompanyMapper --> Company
+ResumeMapper --> Resume
+JobMapper --> Job
+ApplyMapper --> Apply
+AiScoreMapper --> AiScore
+
+AiMatchService --> ChatClient
+ChatClient --> Qwen
+@enduml

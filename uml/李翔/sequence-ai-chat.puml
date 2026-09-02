@@ -1,0 +1,31 @@
+@startuml AI智能问答SSE流式时序图
+skinparam defaultFontName "Microsoft YaHei"
+skinparam sequenceMessageAlign center
+
+actor "学生" as stu
+participant "学生端页面(AiChat)" as web
+participant "AiController" as ai
+participant "Redis" as redis
+participant "ChatClient(Spring AI)" as llm
+
+stu -> web : 输入求职问题
+web -> ai : POST /api/ai/chat/stream {question}
+ai -> redis : INCR ratelimit:ai:{userId}
+alt 首次计数
+  redis --> ai : 设置60秒过期
+end
+alt 计数超过10次
+  ai --> web : Flux.just("提问太频繁，请一分钟后再试")
+else 未超限
+  ai -> llm : prompt(question).stream()
+  loop 逐段生成
+    llm --> ai : Flux 增量文本块
+    ai --> web : SSE(text/event-stream)逐段推送
+    web --> stu : 打字机效果逐字渲染
+  end
+  alt 流式中途出错
+    llm --> ai : onErrorResume 降级提示
+    ai --> web : 推送"AI服务暂时不可用"
+  end
+end
+@enduml

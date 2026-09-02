@@ -1,0 +1,31 @@
+@startuml AI筛选时序图
+skinparam defaultFontName "Microsoft YaHei"
+skinparam sequenceMessageAlign center
+
+actor "HR" as hr
+participant "企业端页面" as web
+participant "AiController" as ai
+participant "AiMatchService" as svc
+participant "规则筛选" as rule
+participant "ChatClient(Spring AI)" as llm
+database "MySQL" as db
+
+hr -> web : 点击"AI筛选候选人"
+web -> ai : POST /api/ai/filter {jobId}
+ai -> svc : filter(jobId)
+svc -> db : 查询该岗位全部投递记录
+db --> svc : 投递列表+简历数据
+loop 每个候选人
+  svc -> rule : 硬性条件校验(学历/年龄/技能)
+  alt 通过规则
+    svc -> llm : 简历+岗位要求 → 生成匹配评分
+    llm --> svc : score + reason
+    svc -> db : 保存 t_ai_score
+  else 未通过规则
+    svc -> db : 标记不符合规则
+  end
+end
+svc --> ai : 候选人评分列表(按分排序)
+ai --> web : 评分结果+理由
+web --> hr : 展示：高匹配候选人推荐邀约
+@enduml

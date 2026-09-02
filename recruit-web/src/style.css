@@ -1,0 +1,38 @@
+/* 全局样式：统一卡片质感、表格表头、滚动条 */
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 卡片统一质感 */
+.el-card {
+  border-radius: 12px !important;
+  border: none !important;
+  box-shadow: 0 1px 3px rgba(30, 40, 70, .06), 0 4px 16px rgba(30, 40, 70, .05) !important;
+}
+.el-card__header { border-bottom: 1px solid #f0f2f7 !important; padding: 16px 20px !important; }
+
+/* 表格表头淡灰底、行高宽松 */
+.el-table { --el-table-header-bg-color: #f7f8fc; --el-table-header-text-color: #5a6072; }
+.el-table th.el-table__cell { font-weight: 600 !important; }
+
+/* 弹窗圆角 */
+.el-dialog { border-radius: 14px !important; }
+
+/* 滚动条 */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: #d3d8e3; border-radius: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* 页面通用标题条 */
+.page-title {
+  font-size: 18px; font-weight: 700; color: #1e2235;
+  display: flex; align-items: center; gap: 8px;
+}
+.page-title::before {
+  content: ""; width: 4px; height: 18px; border-radius: 2px;
+  background: linear-gradient(180deg, #2b7fff, #37dcf2);
+}

@@ -1,0 +1,54 @@
+@startuml 用例图
+skinparam defaultFontName "Microsoft YaHei"
+left to right direction
+skinparam actorStyle awesome
+
+actor "学生" as student
+actor "企业HR" as hr
+actor "管理员" as admin
+
+rectangle "实习招聘及智能分析系统" {
+  usecase "注册登录" as UC1
+  usecase "上传/编辑简历" as UC2
+  usecase "搜索岗位" as UC3
+  usecase "投递简历" as UC4
+  usecase "查看投递状态" as UC5
+
+  usecase "发布岗位" as UC6
+  usecase "管理岗位" as UC7
+  usecase "查看投递简历" as UC8
+  usecase "AI筛选候选人" as UC9
+  usecase "发起面试邀约" as UC10
+
+  usecase "企业入驻审核" as UC11
+  usecase "岗位审核" as UC12
+  usecase "用户管理" as UC13
+  usecase "数据统计" as UC14
+
+  usecase "AI简历解析" as UC15
+  usecase "AI人岗匹配评分" as UC16
+}
+
+student --> UC1
+student --> UC2
+student --> UC3
+student --> UC4
+student --> UC5
+
+hr --> UC1
+hr --> UC6
+hr --> UC7
+hr --> UC8
+hr --> UC9
+hr --> UC10
+
+admin --> UC1
+admin --> UC11
+admin --> UC12
+admin --> UC13
+admin --> UC14
+
+UC9 ..> UC15 : <<include>>
+UC9 ..> UC16 : <<include>>
+UC16 ..> UC15 : <<include>>
+@enduml

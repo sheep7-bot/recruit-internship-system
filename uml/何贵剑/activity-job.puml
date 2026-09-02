@@ -1,0 +1,41 @@
+@startuml 企业岗位管理活动图
+skinparam defaultFontName "Microsoft YaHei"
+skinparam activityDiamondFontSize 13
+skinparam activityFontSize 13
+skinparam defaultTextAlignment center
+
+start
+:HR 登录企业端;
+:填写岗位信息发布;
+:系统强制置为"待审核";
+:等待管理员审核;
+if (审核通过?) then (否)
+  :岗位被驳回;
+  if (HR 修改后重新提交?) then (是)
+    :再次进入"待审核";
+  else (否)
+    stop
+  endif
+else (是)
+endif
+:岗位上架，学生端可见;
+if (需要下架?) then (是)
+  :HR 点击下架;
+  :校验岗位归属;
+  :status 置 2 学生端不可见;
+  stop
+else (否)
+endif
+:持续接收投递，查看投递列表;
+if (需要AI筛选?) then (是)
+  :执行AI双通道筛选;
+  :按分排序查看候选人;
+else (否)
+endif
+if (选中候选人?) then (是)
+  :发起面试邀约;
+  stop
+else (否)
+  stop
+endif
+@enduml

@@ -1,0 +1,51 @@
+@startuml 学生注册登录时序图
+skinparam defaultFontName "Microsoft YaHei"
+skinparam sequenceMessageAlign center
+
+actor "学生" as stu
+participant "登录/注册页" as web
+participant "AuthController" as auth
+participant "UserServiceImpl" as svc
+participant "PasswordUtil(BCrypt)" as bc
+database "MySQL" as db
+participant "TokenStore(Redis)" as redis
+
+alt 注册流程
+  stu -> web : 填写用户名/密码/姓名
+  web -> auth : POST /api/auth/register
+  auth -> svc : register(req)
+  svc -> svc : 校验用户名密码非空、角色白名单
+  svc -> db : selectCount 查用户名是否重复
+  alt 已存在
+    svc --> auth : 抛异常"用户名已被注册"
+  else 不重复
+    svc -> bc : encode(password) BCrypt加密
+    bc --> svc : 密文
+    svc -> db : INSERT t_user
+    svc --> auth : "注册成功"
+    auth --> web : Result(注册成功)
+  end
+else 登录流程
+  stu -> web : 输入用户名/密码
+  web -> auth : POST /api/auth/login
+  auth -> svc : login(username, password)
+  svc -> db : SELECT * FROM t_user WHERE username=?
+  alt 用户不存在或密码不匹配
+    svc --> auth : 抛异常"用户名或密码错误"
+  else 校验通过
+    svc -> bc : matches(password, 密文)
+    opt 旧明文数据
+      svc -> bc : encode 升级为BCrypt并写回
+    end
+    alt 账号被禁用
+      svc --> auth : 抛异常"账号已被禁用"
+    end
+    svc -> redis : tokenStore.create(user) 存24h
+    redis --> svc : token
+    svc -> svc : user.setPassword(null) 抹掉密码
+    svc --> auth : {token, user}
+    auth --> web : Result({token, user})
+    web --> stu : 登录成功进入对应工作台
+  end
+end
+@enduml

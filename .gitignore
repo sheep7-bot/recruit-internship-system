@@ -1,0 +1,19 @@
+# Node
+node_modules/
+dist/
+
+# Java / Maven
+target/
+*.class
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# 文档
+课程报告-封面.doc

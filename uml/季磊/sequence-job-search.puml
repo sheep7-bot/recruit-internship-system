@@ -1,0 +1,31 @@
+@startuml 学生岗位搜索时序图
+skinparam defaultFontName "Microsoft YaHei"
+skinparam sequenceMessageAlign center
+
+actor "学生" as stu
+participant "岗位列表页" as web
+participant "StudentController" as ctl
+participant "JobServiceImpl" as svc
+participant "Redis" as redis
+database "MySQL" as db
+
+stu -> web : 输入关键词/城市/类型并搜索
+web -> ctl : GET /api/student/jobs?keyword&city&type&page&size
+ctl -> svc : search(keyword, city, type, page, size)
+svc -> svc : 分页参数兜底(page>=1, size>=1)
+svc -> svc : 组装缓存 key cache:jobs:{条件}|p{page}s{size}
+svc -> redis : GET cacheKey
+alt 缓存命中
+  redis --> svc : 缓存的JSON
+  svc -> svc : 反序列化为 Map
+  svc --> ctl : 直接返回(不打数据库)
+else 未命中
+  svc -> db : selectPage(status=1, 动态条件, LIMIT)
+  db --> svc : 本页岗位+total
+  svc -> svc : fillCompanyName 补企业名
+  svc -> redis : SET cacheKey JSON TTL 5分钟
+  svc --> ctl : {records, total}
+end
+ctl --> web : Result({records, total})
+web --> stu : 渲染岗位卡片列表+分页条
+@enduml

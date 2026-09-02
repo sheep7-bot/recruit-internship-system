@@ -1,0 +1,41 @@
+server:
+  # 后端服务端口（8080 被本机其他项目占用，本项目用 8081）
+  port: 8081
+
+spring:
+  application:
+    # 应用名（显示在日志和监控里）
+    name: recruit
+
+  # ========== 数据库配置（MySQL 8）==========
+  datasource:
+    # MySQL 8 的驱动类
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # 连接地址：本机 3306 端口，库名 recruit，utf8 编码防止中文乱码
+    url: jdbc:mysql://127.0.0.1:3306/recruit?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    # 数据库账号密码（和你本机 MySQL 一致）
+    username: root
+    password: 1234
+
+  # ========== Redis 配置（本机 6379，无密码）==========
+  # 用途：登录会话（重启不掉线）、岗位搜索缓存、AI 接口限流
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      # password: 默认本地无密码，如有请填写
+      timeout: 3000
+
+  # ========== Spring AI 配置（接入通义千问）==========
+  ai:
+    openai:
+      # 你的千问 API Key（阿里云百炼控制台创建）
+      api-key: sk-ws-H.EYEDXIX.uHuG.MEYCIQDVm3-5YgaixnUQdkG49fxJdVZPpy_rQlj18pdHtSIn6QIhAMjkyznWNI7Y617zRxeSSGznU3ZzB8gtoUfDs4Uthm-5
+      # DashScope 的 OpenAI 兼容接口地址（所以用 openai starter 也能调千问）
+      base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
+      chat:
+        options:
+          # 模型名：qwen-plus 性价比高（推荐教学用）；qwen-turbo 更快更便宜
+          model: qwen-plus
+          # 随机性：0 最严谨，1 最发散。招聘回答用 0.5 合适
+          temperature: 0.5

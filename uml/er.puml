@@ -1,0 +1,90 @@
+@startuml 数据库ER图
+skinparam defaultFontName "Microsoft YaHei"
+skinparam classAttributeIconSize 0
+hide circle
+skinparam linetype ortho
+skinparam defaultFontSize 14
+
+class "t_user 用户表" as user {
+  * id : BIGINT PK
+  --
+  username : VARCHAR(50) 用户名
+  password : VARCHAR(100) 密码
+  role : VARCHAR(20) 角色
+  name : VARCHAR(50) 姓名
+  phone : VARCHAR(20) 电话
+  status : INT 状态
+  create_time : DATETIME
+}
+
+class "t_company 企业表" as company {
+  * id : BIGINT PK
+  --
+  user_id : BIGINT FK 企业账号
+  name : VARCHAR(100) 企业名称
+  industry : VARCHAR(50) 行业
+  scale : VARCHAR(50) 规模
+  contact : VARCHAR(50) 联系人
+  approved : INT 审核状态
+  create_time : DATETIME
+}
+
+class "t_resume 简历表" as resume {
+  * id : BIGINT PK
+  --
+  user_id : BIGINT FK 学生
+  name : VARCHAR(50) 姓名
+  school : VARCHAR(100) 学校
+  edu : VARCHAR(50) 学历
+  age : INT 年龄
+  skills : VARCHAR(200) 技能
+  experience : VARCHAR(500) 经历
+  content : TEXT 简历内容
+  create_time : DATETIME
+}
+
+class "t_job 岗位表" as job {
+  * id : BIGINT PK
+  --
+  company_id : BIGINT FK 企业
+  title : VARCHAR(100) 岗位名称
+  city : VARCHAR(50) 城市
+  salary : VARCHAR(50) 薪资
+  type : VARCHAR(20) 实习/校招
+  skills : VARCHAR(200) 技能要求
+  edu_req : VARCHAR(50) 学历要求
+  description : VARCHAR(500) 描述
+  status : INT 状态(发布/下架)
+  create_time : DATETIME
+}
+
+class "t_apply 投递表" as apply {
+  * id : BIGINT PK
+  --
+  student_id : BIGINT FK 学生
+  job_id : BIGINT FK 岗位
+  status : VARCHAR(20) 投递状态
+  apply_time : DATETIME
+}
+
+class "t_ai_score AI评分表" as aiscore {
+  * id : BIGINT PK
+  --
+  apply_id : BIGINT FK 投递
+  score : INT AI匹配分
+  reason : VARCHAR(500) 评分理由
+  create_time : DATETIME
+}
+
+user -[hidden]r- resume
+resume -[hidden]r- apply
+user -[hidden]d- company
+resume -[hidden]d- job
+apply -[hidden]d- aiscore
+user "1" -- "0..*" company : 企业账号
+user "1" -- "0..*" resume : 拥有简历
+company "1" -- "0..*" job : 发布
+user "1" -- "0..*" apply : 投递
+job "1" -- "0..*" apply : 被投递
+apply "1" -- "0..1" aiscore : AI评分
+@enduml

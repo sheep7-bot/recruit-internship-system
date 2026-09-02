@@ -1,0 +1,94 @@
+@startuml 季磊-学生端设计类图
+skinparam defaultFontName "Microsoft YaHei"
+skinparam classAttributeIconSize 0
+skinparam defaultFontSize 14
+
+package "Controller 控制层" {
+  class AuthController {
+    +login(username, password) : Result
+    +register(user) : Result
+  }
+  class StudentController {
+    +searchJobs(keyword, city, type, page, size) : Result
+    +jobDetail(id) : Result
+    +apply(jobId) : Result
+    +myApplies(page, size) : Result
+    +myResume() : Result
+    +saveResume(resume) : Result
+  }
+}
+
+package "Service 业务层" {
+  class UserServiceImpl {
+    +login(username, password) : Map
+    +register(req) : void
+    +logout(token) : void
+  }
+  class ResumeServiceImpl {
+    +getByUserId(userId) : Resume
+    +save(userId, form) : void
+  }
+  class JobServiceImpl {
+    +search(keyword, city, type, page, size) : Map
+    +detail(jobId) : Map
+  }
+  class ApplyServiceImpl {
+    +apply(studentId, jobId) : void
+    +listByStudent(studentId, page, size) : Map
+  }
+}
+
+package "Mapper 数据访问层" {
+  class UserMapper
+  class ResumeMapper
+  class JobMapper
+  class ApplyMapper
+}
+
+package "entity 实体层" {
+  class User {
+    -id : Long
+    -username : String
+    -role : String
+    -status : Integer
+  }
+  class Resume {
+    -id : Long
+    -userId : Long
+    -name : String
+    -edu : String
+    -skills : String
+    -content : String
+  }
+  class Job {
+    -id : Long
+    -companyId : Long
+    -title : String
+    -city : String
+    -salary : String
+    -status : Integer
+  }
+  class Apply {
+    -id : Long
+    -studentId : Long
+    -jobId : Long
+    -status : String
+  }
+}
+
+class "TokenStore（Redis 会话）" as token
+class "StringRedisTemplate（搜索缓存）" as redis
+
+AuthController --> UserServiceImpl
+StudentController --> JobServiceImpl
+StudentController --> ApplyServiceImpl
+StudentController --> ResumeServiceImpl
+
+UserServiceImpl --> UserMapper
+UserServiceImpl --> token
+ResumeServiceImpl --> ResumeMapper
+JobServiceImpl --> JobMapper
+JobServiceImpl --> redis : cache:jobs:
+ApplyServiceImpl --> ApplyMapper
+ApplyServiceImpl --> JobMapper
+@enduml

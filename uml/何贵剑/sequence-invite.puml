@@ -1,0 +1,33 @@
+@startuml 企业发起面试邀约时序图
+skinparam defaultFontName "Microsoft YaHei"
+skinparam sequenceMessageAlign center
+
+actor "HR" as hr
+participant "企业端投递筛选页" as web
+participant "CompanyController" as ctl
+participant "ApplyServiceImpl" as svc
+database "MySQL" as db
+
+hr -> web : 对某候选人点击"面试邀约"
+web -> ctl : PUT /api/company/applies/{id}/status {status:"面试邀约"}
+ctl -> svc : updateStatus(companyUserId, applyId, status)
+svc -> svc : 白名单校验(status∈已投递/被查看/面试邀约)
+alt 非法状态
+  svc --> ctl : 抛异常"非法的投递状态"
+else 合法
+  svc -> db : SELECT t_apply WHERE id=applyId
+  alt 投递不存在
+    svc --> ctl : 抛异常"投递记录不存在"
+  else 存在
+    svc -> svc : checkJobOwned 岗位归属校验
+    alt 岗位不属于当前企业
+      svc --> ctl : 抛异常"该岗位不属于当前企业"
+    else 通过
+      svc -> db : UPDATE t_apply SET status="面试邀约"
+      svc --> ctl : void
+      ctl --> web : Result("状态已更新")
+      web --> hr : 提示"已邀约，学生端可见"
+    end
+  end
+end
+@enduml

@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>实习招聘及智能分析系统 · 设计建模图集</title>
+<style>
+  :root{
+    --paper:#fafaf8;
+    --paper-rgb:250,250,248;
+    --ink:#0a0a0a;
+    --ink-rgb:10,10,10;
+    --grey-1:#f0f0ee;
+    --grey-2:#d4d4d2;
+    --grey-3:#737373;
+    --accent:#002FA7;
+    --accent-rgb:0,47,167;
+    --accent-on:#ffffff;
+    --sans:"Inter","Helvetica Neue","Helvetica","Arial","Segoe UI",system-ui,sans-serif;
+    --sans-zh:"PingFang SC","Hiragino Sans GB","Source Han Sans SC","Noto Sans SC","Microsoft YaHei UI","Microsoft YaHei","微软雅黑",sans-serif;
+    --mono:"JetBrains Mono","IBM Plex Mono","SF Mono","Cascadia Code","Consolas",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:100%;height:100%;overflow:hidden;background:var(--paper);color:var(--ink);
+    font-family:var(--sans),var(--sans-zh);-webkit-font-smoothing:antialiased}
+
+  /* 极细网格背景（CSS 实现，离线可靠） */
+  body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+    background-image:linear-gradient(rgba(10,10,10,.035) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(10,10,10,.035) 1px,transparent 1px);
+    background-size:64px 64px}
+  body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+    background-image:radial-gradient(rgba(10,10,10,.14) 1px,transparent 1px);
+    background-size:14px 14px;background-position:0 0;opacity:.08}
+
+  #app{position:relative;z-index:1;height:100vh;display:flex;flex-direction:column}
+
+  /* ===== 顶部 Chrome ===== */
+  header{display:flex;justify-content:space-between;align-items:center;
+    padding:14px 32px;border-bottom:1px solid rgba(127,127,127,.28)}
+  .brand{font-size:15px;font-weight:600;letter-spacing:.02em}
+  .brand em{font-style:normal;color:var(--accent)}
+  .sub{font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--grey-3);margin-left:14px}
+  .meta{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--grey-3)}
+  .meta b{color:var(--ink);font-weight:500}
+
+  /* ===== 5 个文件夹按钮 ===== */
+  nav.tabs{display:flex;gap:0;padding:14px 32px;border-bottom:1px solid rgba(127,127,127,.22)}
+  .tab{position:relative;padding:12px 22px;cursor:pointer;user-select:none;border:1px solid transparent;
+    background:transparent;color:var(--ink);font-family:var(--sans),var(--sans-zh);font-size:14px;font-weight:500;
+    text-align:left;transition:background .15s var(--ease),color .15s var(--ease);min-width:150px}
+  .tab .t-sub{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--grey-3);margin-top:3px;font-weight:400}
+  .tab:hover{background:var(--grey-1)}
+  .tab.active{background:var(--accent);color:var(--accent-on)}
+  .tab.active .t-sub{color:rgba(255,255,255,.7)}
+  .tab.active::after{content:"";position:absolute;left:0;bottom:-1px;width:100%;height:3px;background:var(--accent)}
+
+  /* ===== 主展示区 ===== */
+  main{flex:1;position:relative;display:flex;align-items:center;justify-content:center;min-height:0;padding:0 40px}
+  .stage{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .img-wrap{flex:1;min-height:0;width:100%;display:flex;align-items:center;justify-content:center;
+    background:#fff;border:1px solid rgba(127,127,127,.25);position:relative;overflow:hidden}
+  #mainImg{max-width:100%;max-height:100%;object-fit:contain;display:block;
+    transition:opacity .18s ease;opacity:1}
+  #mainImg.fade{opacity:0}
+
+  .stage-info{display:flex;align-items:baseline;gap:16px;padding:12px 4px 0;width:100%}
+  .stage-info .idx{font-family:var(--mono);font-size:13px;letter-spacing:.1em;color:var(--accent);font-weight:600}
+  .stage-info .name{font-size:15px;font-weight:500}
+  .stage-info .type{margin-left:auto;font-family:var(--mono);font-size:11px;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--grey-3)}
+  .stage-info .type b{color:var(--ink);font-weight:500}
+
+  /* ===== 左右箭头 ===== */
+  .arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:5;
+    width:44px;height:44px;border:1px solid rgba(127,127,127,.4);background:var(--paper);
+    cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .12s}
+  .arrow:hover{background:var(--accent);border-color:var(--accent)}
+  .arrow:hover svg{stroke:var(--accent-on)}
+  .arrow svg{width:20px;height:20px;stroke:var(--ink);stroke-width:2;fill:none}
+  .arrow.prev{left:8px}
+  .arrow.next{right:8px}
+  .arrow:disabled{opacity:.25;cursor:default}
+  .arrow:disabled:hover{background:var(--paper)}
+  .arrow:disabled:hover svg{stroke:var(--ink)}
+
+  /* ===== 底部缩略图 ===== */
+  footer{display:flex;align-items:center;gap:14px;padding:12px 32px 16px;border-top:1px solid rgba(127,127,127,.22)}
+  .thumbs{display:flex;gap:10px;overflow-x:auto;flex:1;padding:4px 0;scrollbar-width:thin}
+  .thumbs::-webkit-scrollbar{height:4px}
+  .thumbs::-webkit-scrollbar-thumb{background:var(--grey-2)}
+  .thumbs::-webkit-scrollbar-track{background:transparent}
+  .thumb{flex:0 0 auto;width:96px;height:60px;background:#fff;border:1px solid rgba(127,127,127,.3);
+    cursor:pointer;overflow:hidden;padding:0;transition:border-color .12s,transform .12s;position:relative}
+  .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .thumb:hover{border-color:var(--accent)}
+  .thumb.active{border:2px solid var(--accent)}
+  .thumb.active::after{content:"";position:absolute;inset:0;background:rgba(var(--accent-rgb),.12);pointer-events:none}
+  .thumb .t-no{position:absolute;left:2px;top:2px;font-family:var(--mono);font-size:9px;color:#fff;
+    background:rgba(0,0,0,.55);padding:1px 4px;z-index:1}
+  .hint{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--grey-3);
+    white-space:nowrap;display:flex;flex-direction:column;gap:4px;text-align:right}
+
+  /* ===== 键盘 / 全屏提示 ===== */
+  kbd{font-family:var(--mono);font-size:10px;border:1px solid var(--grey-2);border-bottom-width:2px;
+    padding:0 5px;border-radius:2px;background:var(--grey-1)}
+
+  /* ===== 图片放大 Lightbox ===== */
+  #lightbox{position:fixed;inset:0;z-index:100;background:rgba(6,6,8,.94);display:none;
+    overflow:hidden;cursor:grab;user-select:none}
+  #lightbox.open{display:block}
+  #lightbox.dragging{cursor:grabbing}
+  #lbImg{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform;
+    -webkit-user-drag:none;background:#fff;box-shadow:0 0 60px rgba(0,0,0,.45)}
+  .lb-close{position:fixed;top:16px;right:20px;z-index:102;background:transparent;border:1px solid rgba(255,255,255,.35);
+    color:#fff;width:44px;height:44px;font-size:20px;cursor:pointer;line-height:1}
+  .lb-close:hover{background:rgba(255,255,255,.15);border-color:#fff}
+  .lb-zoom{position:fixed;top:20px;left:20px;z-index:102;font-family:var(--mono);font-size:12px;
+    color:#fff;background:rgba(20,20,22,.65);padding:7px 12px;border:1px solid rgba(255,255,255,.16);letter-spacing:.12em}
+  .lb-toolbar{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;z-index:102;
+    display:flex;gap:8px;background:rgba(20,20,22,.75);padding:8px 12px;border:1px solid rgba(255,255,255,.14)}
+  .lb-toolbar button{background:transparent;border:1px solid rgba(255,255,255,.3);color:#fff;
+    font-family:var(--mono);font-size:13px;padding:7px 14px;cursor:pointer;min-width:44px}
+  .lb-toolbar button:hover{background:var(--accent);border-color:var(--accent);color:#fff}
+  .lb-hint{position:fixed;bottom:22px;right:20px;z-index:102;font-family:var(--mono);font-size:11px;
+    color:rgba(255,255,255,.5);letter-spacing:.06em}
+  .lb-caption{position:fixed;bottom:84px;left:50%;transform:translateX(-50%);z-index:102;
+    font-size:14px;color:rgba(255,255,255,.85);letter-spacing:.04em;white-space:nowrap}
+  .img-wrap{cursor:zoom-in}
+  .img-wrap::after{content:"点击放大";position:absolute;right:12px;bottom:12px;z-index:2;
+    font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+    color:#fff;background:rgba(var(--ink-rgb),.55);padding:4px 8px;opacity:0;transition:opacity .15s;pointer-events:none}
+  .img-wrap:hover::after{opacity:1}
+
+  @media (max-width:900px){
+    nav.tabs{padding:10px 16px;flex-wrap:wrap}
+    .tab{min-width:120px;padding:10px 14px}
+    header{padding:10px 16px}
+    .sub{display:none}
+    footer{flex-wrap:wrap;padding:10px 16px}
+    .hint{display:none}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header>
+    <div style="display:flex;align-items:center">
+      <span class="brand">实习招聘及智能分析系统 <em>· 设计建模图集</em></span>
+      <span class="sub">DESIGN MODELING / UML</span>
+    </div>
+    <div class="meta">组 长：<b>李翔</b>　小组成员：<b>季磊 · 何贵剑 · 李嘉文</b></div>
+  </header>
+
+  <nav class="tabs" id="tabs"></nav>
+
+  <main>
+    <button class="arrow prev" id="prev" aria-label="上一张">
+      <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <div class="stage">
+      <div class="img-wrap"><img id="mainImg" alt=""></div>
+      <div class="stage-info">
+        <span class="idx" id="idx"></span>
+        <span class="name" id="name"></span>
+        <span class="type" id="type"></span>
+      </div>
+    </div>
+    <button class="arrow next" id="next" aria-label="下一张">
+      <svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+    </button>
+  </main>
+
+  <footer>
+    <div class="thumbs" id="thumbs"></div>
+    <div class="hint">
+      <span><kbd>←</kbd> <kbd>→</kbd> 翻页</span>
+      <span><kbd>F</kbd> 全屏　<kbd>1</kbd>-<kbd>5</kbd> 切文件夹</span>
+    </div>
+  </footer>
+
+</div>
+
+<!-- ===== 放大 Lightbox ===== -->
+<div id="lightbox">
+  <img id="lbImg" alt="">
+  <button class="lb-close" id="lbClose" aria-label="关闭">✕</button>
+  <div class="lb-zoom" id="lbZoom">100%</div>
+  <div class="lb-caption" id="lbCaption"></div>
+  <div class="lb-toolbar">
+    <button id="lbOut" title="缩小">−</button>
+    <button id="lbReset" title="还原 1:1">1:1</button>
+    <button id="lbIn" title="放大">＋</button>
+  </div>
+  <div class="lb-hint">滚轮缩放 · 拖拽平移 · 双击还原 · ESC 关闭 · ← → 切图</div>
+</div>
+
+<script>
+// ============ 图片数据（相对路径，与 index.html 同级部署） ============
+const FOLDERS = [
+  {
+    key:"system", name:"系统整体", sub:"WHOLE SYSTEM",
+    desc:"整个系统的设计类图 / ER 图 / 用例图 / 核心时序图",
+    files:[
+      {f:"系统/用例图.png", n:"系统用例图", t:"USE CASE"},
+      {f:"系统/控制层与业务层类图.png", n:"控制层与业务层设计类图", t:"CLASS DIAGRAM"},
+      {f:"系统/数据访问层与实体层类图.png", n:"数据访问层与实体层设计类图", t:"CLASS DIAGRAM"},
+      {f:"系统/数据库ER图.png", n:"数据库 ER 图（6 张表）", t:"ER DIAGRAM"},
+      {f:"系统/AI筛选时序图.png", n:"AI 智能筛选时序图", t:"SEQUENCE"}
+    ]
+  },
+  {
+    key:"lixiang", name:"李翔 · AI 智能模块", sub:"LEADER / AI",
+    desc:"组长 · 系统架构 + AI 智能模块（简历解析 / 匹配评分 / 推荐 / 问答）",
+    files:[
+      {f:"李翔/李翔-AI智能模块设计类图.png", n:"AI 智能模块设计类图", t:"CLASS DIAGRAM"},
+      {f:"李翔/AI简历解析时序图.png", n:"AI 简历解析时序图", t:"SEQUENCE"},
+      {f:"李翔/AI智能问答SSE流式时序图.png", n:"AI 智能问答（SSE 流式）时序图", t:"SEQUENCE"},
+      {f:"李翔/AI双通道筛选活动图.png", n:"AI 双通道筛选活动图", t:"ACTIVITY"},
+      {f:"李翔/AI双通道筛选核心算法流程图.png", n:"AI 双通道筛选核心算法流程图", t:"FLOWCHART"},
+      {f:"李翔/AI简历解析核心算法流程图.png", n:"AI 简历解析核心算法流程图", t:"FLOWCHART"}
+    ]
+  },
+  {
+    key:"jilei", name:"季磊 · 学生端", sub:"STUDENT END",
+    desc:"学生注册登录 / 简历 / 岗位搜索 / 投递与状态跟踪",
+    files:[
+      {f:"季磊/季磊-学生端设计类图.png", n:"学生端设计类图", t:"CLASS DIAGRAM"},
+      {f:"季磊/学生注册登录时序图.png", n:"学生注册登录时序图", t:"SEQUENCE"},
+      {f:"季磊/学生岗位搜索时序图.png", n:"学生岗位搜索时序图（Redis 缓存）", t:"SEQUENCE"},
+      {f:"季磊/学生投递简历时序图.png", n:"学生投递简历时序图", t:"SEQUENCE"},
+      {f:"季磊/学生投递活动图.png", n:"学生投递活动图", t:"ACTIVITY"},
+      {f:"季磊/岗位搜索缓存核心算法流程图.png", n:"岗位搜索缓存核心算法流程图", t:"FLOWCHART"}
+    ]
+  },
+  {
+    key:"heguijian", name:"何贵剑 · 企业端", sub:"COMPANY END",
+    desc:"企业注册 / 岗位发布管理 / 投递查看 / AI 筛选交互 / 面试邀约",
+    files:[
+      {f:"何贵剑/何贵剑-企业端设计类图.png", n:"企业端设计类图", t:"CLASS DIAGRAM"},
+      {f:"何贵剑/企业发布岗位时序图.png", n:"企业发布岗位时序图", t:"SEQUENCE"},
+      {f:"何贵剑/企业查看投递并AI筛选时序图.png", n:"查看投递并 AI 筛选时序图", t:"SEQUENCE"},
+      {f:"何贵剑/企业发起面试邀约时序图.png", n:"企业发起面试邀约时序图", t:"SEQUENCE"},
+      {f:"何贵剑/企业岗位管理活动图.png", n:"企业岗位管理活动图", t:"ACTIVITY"},
+      {f:"何贵剑/岗位归属校验核心算法流程图.png", n:"岗位归属校验核心算法流程图", t:"FLOWCHART"}
+    ]
+  },
+  {
+    key:"lijiawen", name:"李嘉文 · 管理端", sub:"ADMIN END",
+    desc:"企业入驻审核 / 岗位审核 / 用户管理 / 数据统计",
+    files:[
+      {f:"李嘉文/李嘉文-管理端设计类图.png", n:"管理端设计类图", t:"CLASS DIAGRAM"},
+      {f:"李嘉文/企业入驻审核时序图.png", n:"企业入驻审核时序图", t:"SEQUENCE"},
+      {f:"李嘉文/岗位审核时序图.png", n:"岗位审核时序图", t:"SEQUENCE"},
+      {f:"李嘉文/数据统计时序图.png", n:"平台数据统计时序图", t:"SEQUENCE"},
+      {f:"李嘉文/管理端审核活动图.png", n:"管理端审核活动图", t:"ACTIVITY"},
+      {f:"李嘉文/平台数据统计核心算法流程图.png", n:"平台数据统计核心算法流程图", t:"FLOWCHART"}
+    ]
+  }
+];
+
+// ============ 状态 ============
+let curFolder = 0;
+let curIdx = 0;
+const img = document.getElementById("mainImg");
+const tabsEl = document.getElementById("tabs");
+const thumbsEl = document.getElementById("thumbs");
+const idxEl = document.getElementById("idx");
+const nameEl = document.getElementById("name");
+const typeEl = document.getElementById("type");
+const prevBtn = document.getElementById("prev");
+const nextBtn = document.getElementById("next");
+
+// ============ 渲染 ============
+function renderTabs(){
+  tabsEl.innerHTML = "";
+  FOLDERS.forEach((f, i)=>{
+    const b = document.createElement("button");
+    b.className = "tab" + (i === curFolder ? " active" : "");
+    b.innerHTML = f.name + '<span class="t-sub">' + f.sub + " · " + f.files.length + " 图</span>";
+    b.title = f.desc;
+    b.onclick = ()=>switchFolder(i);
+    tabsEl.appendChild(b);
+  });
+}
+
+function renderThumbs(){
+  thumbsEl.innerHTML = "";
+  const files = FOLDERS[curFolder].files;
+  files.forEach((item, i)=>{
+    const t = document.createElement("button");
+    t.className = "thumb" + (i === curIdx ? " active" : "");
+    t.innerHTML = '<span class="t-no">' + (i+1) + "</span><img src='" + item.f + "' loading='lazy' alt=''>";
+    t.onclick = ()=>show(i);
+    thumbsEl.appendChild(t);
+  });
+  const active = thumbsEl.querySelector(".thumb.active");
+  if(active) active.scrollIntoView({behavior:"smooth", block:"nearest", inline:"nearest"});
+}
+
+function show(i){
+  const files = FOLDERS[curFolder].files;
+  if(i < 0) i = 0;
+  if(i >= files.length) i = files.length - 1;
+  curIdx = i;
+  const item = files[i];
+  img.classList.add("fade");
+  setTimeout(()=>{
+    img.src = "" + item.f;
+    img.alt = item.n;
+    img.classList.remove("fade");
+  }, 120);
+  idxEl.textContent = String(i+1).padStart(2,"0") + " / " + String(files.length).padStart(2,"0");
+  nameEl.textContent = item.n;
+  typeEl.innerHTML = "<b>" + FOLDERS[curFolder].name.split(" · ")[0] + "</b> · " + item.t;
+  prevBtn.disabled = (i === 0);
+  nextBtn.disabled = (i === files.length - 1);
+  renderThumbs();
+}
+
+function switchFolder(i){
+  if(i === curFolder) return;
+  curFolder = i;
+  curIdx = 0;
+  renderTabs();
+  show(0);
+}
+
+// ============ 事件 ============
+prevBtn.onclick = ()=>show(curIdx - 1);
+nextBtn.onclick = ()=>show(curIdx + 1);
+
+document.addEventListener("keydown", e=>{
+  const lbOpen = lb.classList.contains("open");
+  if(lbOpen){
+    if(e.key === "Escape"){ lbCloseBox(); return; }
+    if(e.key === "ArrowLeft"){ show(curIdx - 1); lbOpen(); return; }
+    if(e.key === "ArrowRight"){ show(curIdx + 1); lbOpen(); return; }
+    if(e.key === "+" || e.key === "="){ lbZoomBy(1.25); return; }
+    if(e.key === "-" || e.key === "_"){ lbZoomBy(0.8); return; }
+    if(e.key === "0"){ lbResetView(); return; }
+    return; // lightbox 打开时其余键不响应
+  }
+  if(e.key === "ArrowLeft") show(curIdx - 1);
+  if(e.key === "ArrowRight") show(curIdx + 1);
+  if(e.key === "f" || e.key === "F"){
+    if(document.fullscreenElement) document.exitFullscreen();
+    else document.documentElement.requestFullscreen();
+  }
+  if(e.key >= "1" && e.key <= "5") switchFolder(parseInt(e.key) - 1);
+});
+
+// 滚轮在图片区切换（lightbox 打开时不触发）
+const wrap = document.querySelector(".img-wrap");
+let wheelLock = false;
+wrap.addEventListener("wheel", e=>{
+  if(lb.classList.contains("open")) return;
+  e.preventDefault();
+  if(wheelLock) return;
+  wheelLock = true;
+  if(e.deltaY > 0) show(curIdx + 1); else show(curIdx - 1);
+  setTimeout(()=>wheelLock = false, 350);
+}, {passive:false});
+
+// ============ Lightbox 放大 ============
+const lb = document.getElementById("lightbox");
+const lbImg = document.getElementById("lbImg");
+const lbZoom = document.getElementById("lbZoom");
+const lbCaption = document.getElementById("lbCaption");
+const lbClose = document.getElementById("lbClose");
+const lbIn = document.getElementById("lbIn");
+const lbOut = document.getElementById("lbOut");
+const lbReset = document.getElementById("lbReset");
+
+let lbScale = 1, lbTx = 0, lbTy = 0;      // 缩放与平移
+let lbDragging = false, lbStartX = 0, lbStartY = 0, lbStartTx = 0, lbStartTy = 0;
+const LB_MIN = 0.1, LB_MAX = 10;
+
+function lbApply(){
+  lbImg.style.transform = "translate(" + lbTx + "px," + lbTy + "px) scale(" + lbScale + ")";
+  lbZoom.textContent = Math.round(lbScale * 100) + "%";
+}
+
+function lbFit(){
+  // 初始适配：按图片自然尺寸等比放入视口（留出上下工具栏空间）
+  const vw = lb.clientWidth || window.innerWidth, vh = lb.clientHeight || window.innerHeight;
+  const w = lbImg.naturalWidth || 1, h = lbImg.naturalHeight || 1;
+  lbScale = Math.min((vw * 0.9) / w, (vh * 0.8) / h, 1.5);
+  if(lbScale < LB_MIN) lbScale = LB_MIN;
+  lbTx = (vw - w * lbScale) / 2;
+  lbTy = (vh - h * lbScale) / 2;
+  lbApply();
+}
+
+function lbOpen(){
+  const item = FOLDERS[curFolder].files[curIdx];
+  lbCaption.textContent = item.n;
+  lb.classList.add("open");               // 先显示容器再加载图
+  document.body.style.overflow = "hidden";
+  lbImg.onload = lbFit;
+  lbImg.onerror = ()=>{ lbCaption.textContent = item.n + "（图片加载失败）"; };
+  lbImg.src = "" + item.f;
+  if(lbImg.complete) lbFit();             // 缓存命中时 onload 已错过，兜底居中
+}
+function lbCloseBox(){
+  lb.classList.remove("open");
+  document.body.style.overflow = "";
+}
+function lbZoomAt(clientX, clientY, factor){
+  const rect = lbImg.getBoundingClientRect();
+  const left0 = lbImg.offsetLeft, top0 = lbImg.offsetTop;
+  const px = (clientX - rect.left) / lbScale;
+  const py = (clientY - rect.top) / lbScale;
+  const ns = Math.max(LB_MIN, Math.min(LB_MAX, lbScale * factor));
+  if(ns === lbScale) return;
+  lbTx = clientX - left0 - px * ns;
+  lbTy = clientY - top0 - py * ns;
+  lbScale = ns;
+  lbApply();
+}
+function lbZoomBy(factor){
+  lbZoomAt(lb.clientWidth / 2, lb.clientHeight / 2, factor);
+}
+function lbResetView(){
+  lbFit();
+}
+
+lbClose.onclick = lbCloseBox;
+lbIn.onclick = ()=>lbZoomBy(1.25);
+lbOut.onclick = ()=>lbZoomBy(0.8);
+lbReset.onclick = lbResetView;
+
+lb.addEventListener("wheel", e=>{
+  e.preventDefault();
+  lbZoomAt(e.clientX, e.clientY, e.deltaY < 0 ? 1.15 : 0.87);
+}, {passive:false});
+
+lb.addEventListener("mousedown", e=>{
+  lbDragging = true;
+  lbStartX = e.clientX; lbStartY = e.clientY;
+  lbStartTx = lbTx; lbStartTy = lbTy;
+  lb.classList.add("dragging");
+});
+document.addEventListener("mousemove", e=>{
+  if(!lbDragging) return;
+  lbTx = lbStartTx + (e.clientX - lbStartX);
+  lbTy = lbStartTy + (e.clientY - lbStartY);
+  lbApply();
+});
+document.addEventListener("mouseup", ()=>{
+  if(!lbDragging) return;
+  lbDragging = false;
+  lb.classList.remove("dragging");
+});
+
+lb.addEventListener("dblclick", lbResetView);
+
+// 主图点击 → 打开放大
+document.querySelector(".img-wrap").addEventListener("click", e=>{
+  if(e.target.tagName === "IMG") lbOpen();
+});
+
+// ============ 启动 ============
+renderTabs();
+show(0);
+</script>
+</body>
+</html>

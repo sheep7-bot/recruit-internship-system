@@ -1,0 +1,41 @@
+@startuml 管理端审核活动图
+skinparam defaultFontName "Microsoft YaHei"
+skinparam activityDiamondFontSize 13
+skinparam activityFontSize 13
+skinparam defaultTextAlignment center
+
+start
+:管理员登录管理端;
+:查看待办(待审核企业数/待审核岗位数);
+if (有企业入驻待审核?) then (是)
+  :查看企业注册资料;
+  :点击"通过"或"驳回";
+  if (资料合规?) then (是)
+    :approved=1 通过;
+    :企业可正常登录发岗位;
+  else (否)
+    :approved=2 驳回;
+    :企业登录时提示未通过;
+  endif
+else (否)
+endif
+if (有岗位发布待审核?) then (是)
+  :查看岗位信息(含企业名);
+  :点击"通过"或"驳回";
+  if (岗位合规?) then (是)
+    :status=1 上架;
+    :清岗位搜索缓存;
+    :学生端立即可见;
+  else (否)
+    :status=2 驳回;
+  endif
+else (否)
+endif
+if (存在违规用户?) then (是)
+  :用户管理页禁用账号;
+  :该用户登录被拦截;
+else (否)
+endif
+:进入数据统计页查看平台总览;
+stop
+@enduml

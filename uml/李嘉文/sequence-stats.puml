@@ -1,0 +1,27 @@
+@startuml 数据统计时序图
+skinparam defaultFontName "Microsoft YaHei"
+skinparam sequenceMessageAlign center
+
+actor "管理员" as admin
+participant "管理端数据统计页" as web
+participant "AdminController" as ctl
+participant "AdminServiceImpl" as svc
+database "MySQL" as db
+
+admin -> web : 打开数据统计页
+web -> ctl : GET /api/admin/stats
+ctl -> svc : stats()
+svc -> db : selectCount(role=student) 学生数
+svc -> db : selectCount(null) 企业数
+svc -> db : selectCount(status=1) 在招岗位数
+svc -> db : selectCount(null) 投递总数
+svc -> db : selectCount(null) 简历总数
+svc -> db : selectCount(approved=0) 待审核企业数
+svc -> db : selectCount(status=0) 待审核岗位数
+db --> svc : 各数量
+svc -> svc : 组装 Map(studentCount/companyCount/jobCount/applyCount/resumeCount/pendingCompanyCount/pendingJobCount)
+svc --> ctl : Map
+ctl --> web : Result
+web -> web : ECharts 渲染仪表盘/图表
+web --> admin : 展示平台数据总览
+@enduml

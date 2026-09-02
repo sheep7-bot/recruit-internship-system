@@ -1,0 +1,29 @@
+@startuml 学生投递简历时序图
+skinparam defaultFontName "Microsoft YaHei"
+skinparam sequenceMessageAlign center
+
+actor "学生" as stu
+participant "岗位列表/详情页" as web
+participant "StudentController" as ctl
+participant "ApplyServiceImpl" as svc
+database "MySQL" as db
+
+stu -> web : 点击"立即投递"
+web -> ctl : POST /api/student/applies {jobId}
+ctl -> svc : apply(studentId, jobId)
+svc -> db : SELECT t_job WHERE id=jobId
+alt 岗位不存在或不在招聘中(status≠1)
+  svc --> ctl : 抛异常"该岗位不在招聘中"
+  ctl --> web : Result(code≠0)
+else 岗位在招
+  svc -> db : selectCount 查是否已投递过
+  alt 已投递过
+    svc --> ctl : 抛异常"已投递过该岗位"
+  else 未投递过
+    svc -> db : INSERT t_apply(status="已投递")
+    svc --> ctl : void
+    ctl --> web : Result("投递成功")
+    web --> stu : 提示"投递成功"
+  end
+end
+@enduml

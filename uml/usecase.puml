@@ -29,26 +29,25 @@ rectangle "实习招聘及智能分析系统" {
   usecase "AI人岗匹配评分" as UC16
 }
 
-student --> UC1
-student --> UC2
-student --> UC3
-student --> UC4
-student --> UC5
+student -- UC1
+student -- UC2
+student -- UC3
+student -- UC4
+student -- UC5
 
-hr --> UC1
-hr --> UC6
-hr --> UC7
-hr --> UC8
-hr --> UC9
-hr --> UC10
+hr -- UC1
+hr -- UC6
+hr -- UC7
+hr -- UC8
+hr -- UC9
+hr -- UC10
 
-admin --> UC1
-admin --> UC11
-admin --> UC12
-admin --> UC13
-admin --> UC14
+admin -- UC1
+admin -- UC11
+admin -- UC12
+admin -- UC13
+admin -- UC14
 
 UC9 ..> UC15 : <<include>>
 UC9 ..> UC16 : <<include>>
-UC16 ..> UC15 : <<include>>
 @enduml

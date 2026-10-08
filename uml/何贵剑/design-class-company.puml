@@ -1,36 +1,61 @@
 @startuml 何贵剑-企业端设计类图
 skinparam defaultFontName "Microsoft YaHei"
 skinparam classAttributeIconSize 0
-skinparam defaultFontSize 14
+skinparam defaultFontSize 12
+skinparam defaultFontSize 12
 
 package "Controller 控制层" {
   class CompanyController {
+    -jobService : JobService
+    -applyService : ApplyService
+    -aiMatchService : AiMatchService
     +info() : Result
     +myJobs() : Result
-    +publish(job) : Result
-    +update(job) : Result
-    +offline(jobId) : Result
+    +publish(job : Job) : Result
+    +update(job : Job) : Result
+    +offline(jobId : Long) : Result
     +applies(jobId, page, size) : Result
     +updateApplyStatus(applyId, status) : Result
-    +aiFilter(jobId) : Result
+    +aiFilter(jobId : Long) : Result
   }
 }
 
 package "Service 业务层" {
   class JobServiceImpl {
+    -jobMapper : JobMapper
+    -companyMapper : CompanyMapper
+    -redis : StringRedisTemplate
+    -mapper : ObjectMapper
     +publish(companyUserId, job) : void
     +update(companyUserId, form) : void
     +offline(companyUserId, jobId) : void
     +listByCompany(companyUserId) : List
-    +getOwned(companyUserId, jobId) : Job
+    -getOwned(companyUserId, jobId) : Job
+    -getByUserId(companyUserId) : Company
+    -evictJobCache() : void
+    -fillCompanyName(jobs) : List
   }
   class ApplyServiceImpl {
+    -applyMapper : ApplyMapper
+    -jobMapper : JobMapper
+    -resumeMapper : ResumeMapper
+    -userMapper : UserMapper
+    -aiScoreMapper : AiScoreMapper
+    -companyMapper : CompanyMapper
     +listByJob(companyUserId, jobId, page, size) : Map
     +updateStatus(companyUserId, applyId, status) : void
-    +checkJobOwned(companyUserId, jobId) : void
+    -checkJobOwned(companyUserId, jobId) : void
   }
   class AiMatchServiceImpl {
-    +filter(companyUserId, jobId) : List<Map>
+    -chatClient : ChatClient
+    -jobMapper : JobMapper
+    -applyMapper : ApplyMapper
+    -resumeMapper : ResumeMapper
+    -aiScoreMapper : AiScoreMapper
+    -companyMapper : CompanyMapper
+    +filter(companyUserId, jobId) : List
+    -checkRule(job, resume) : String
+    -saveScore(applyId, score, reason) : void
   }
 }
 
@@ -49,46 +74,69 @@ package "entity 实体层" {
     -userId : Long
     -name : String
     -approved : Integer
+    +getId() : Long
+    +getUserId() : Long
+    +getName() : String
+    +getApproved() : Integer
   }
   class Job {
     -id : Long
     -companyId : Long
     -title : String
     -status : Integer
+    +getId() : Long
+    +getCompanyId() : Long
+    +getTitle() : String
+    +getStatus() : Integer
   }
   class Apply {
     -id : Long
     -studentId : Long
     -jobId : Long
     -status : String
+    +getId() : Long
+    +getJobId() : Long
+    +getStatus() : String
+    +setStatus(status : String) : void
   }
   class Resume {
     -id : Long
     -userId : Long
     -name : String
+    -school : String
+    -edu : String
+    -skills : String
+    -content : String
+    +getUserId() : Long
+    +getSchool() : String
+    +getEdu() : String
+    +getSkills() : String
+    +getContent() : String
   }
   class User {
     -id : Long
     -name : String
+    +getId() : Long
+    +getName() : String
   }
 }
 
 class "StringRedisTemplate（清缓存）" as redis
 
-CompanyController --> JobServiceImpl
-CompanyController --> ApplyServiceImpl
-CompanyController --> AiMatchServiceImpl
+CompanyController -- JobServiceImpl
+CompanyController -- ApplyServiceImpl
+CompanyController -- AiMatchServiceImpl
 
-JobServiceImpl --> JobMapper
-JobServiceImpl --> CompanyMapper
-JobServiceImpl --> redis : evictJobCache
-ApplyServiceImpl --> ApplyMapper
-ApplyServiceImpl --> JobMapper
-ApplyServiceImpl --> CompanyMapper
-ApplyServiceImpl --> ResumeMapper
-ApplyServiceImpl --> UserMapper
-ApplyServiceImpl --> AiScoreMapper
-AiMatchServiceImpl --> JobMapper
-AiMatchServiceImpl --> CompanyMapper
-AiMatchServiceImpl --> ApplyMapper
+JobServiceImpl -- JobMapper
+JobServiceImpl -- CompanyMapper
+JobServiceImpl -- redis : evictJobCache
+ApplyServiceImpl -- ApplyMapper
+ApplyServiceImpl -- JobMapper
+ApplyServiceImpl -- CompanyMapper
+ApplyServiceImpl -- ResumeMapper
+ApplyServiceImpl -- UserMapper
+ApplyServiceImpl -- AiScoreMapper
+AiMatchServiceImpl -- JobMapper
+AiMatchServiceImpl -- CompanyMapper
+AiMatchServiceImpl -- ApplyMapper
 @enduml

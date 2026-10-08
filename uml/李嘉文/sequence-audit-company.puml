@@ -1,38 +1,53 @@
 @startuml 企业入驻审核时序图
 skinparam defaultFontName "Microsoft YaHei"
+hide footbox
+<style>
+participant {
+  FontColor white
+  BorderColor white
+  BackgroundColor white
+}
+sequenceDiagram {
+  FontColor black
+}
+</style>
 skinparam sequenceMessageAlign center
-
-actor "管理员" as admin
+participant "管理员" as admin
 participant "管理端企业审核页" as web
 participant "AdminController" as ctl
 participant "AdminServiceImpl" as svc
-database "MySQL" as db
-
 admin -> web : 打开企业审核页
 web -> ctl : GET /api/admin/companies?approved=0
 ctl -> svc : listCompanies(0)
-svc -> db : selectList(approved=0, 按状态升序)
-db --> svc : 待审核企业列表
-svc --> ctl : List<Company>
-ctl --> web : Result
-web --> admin : 展示待审核企业(带数量徽标)
+note over svc
+  selectList(approved=0, 状态升序)
+end note
+svc --> ctl : List<Company> 待审核企业
+ctl --> web : Result(data=List)
+web --> admin : 展示待审核企业(数量徽标)
 
 admin -> web : 查看企业信息，点击"通过/驳回"
-web -> ctl : PUT /api/admin/companies/{id}/audit {pass}
+web -> ctl : PUT /api/admin/companies/{id}/audit {pass:Boolean}
 ctl -> svc : auditCompany(companyId, pass)
-svc -> db : SELECT t_company WHERE id=companyId
+note over svc
+  查企业 company:Company
+end note
 alt 企业不存在
   svc --> ctl : 抛异常"企业不存在"
 else 存在
-  svc -> svc : setApproved(pass ? 1 : 2)
-  svc -> db : UPDATE t_company
+  note over svc
+    company.setApproved(pass?1:2)
+  end note
+  note over svc
+    updateById 落库
+  end note
   svc --> ctl : void
   ctl --> web : Result("审核完成")
 end
-
 alt pass=true
-  web --> admin : 通过，该企业可登录
+  web --> admin : 通过，企业可登录
 else pass=false
-  web --> admin : 驳回，企业登录时提示未通过
+  web --> admin : 驳回，登录时提示未通过
 end
+
 @enduml

@@ -1,31 +1,49 @@
 @startuml AI筛选时序图
 skinparam defaultFontName "Microsoft YaHei"
+hide footbox
+<style>
+participant {
+  FontColor white
+  BorderColor white
+  BackgroundColor white
+}
+sequenceDiagram {
+  FontColor black
+}
+</style>
 skinparam sequenceMessageAlign center
-
-actor "HR" as hr
+participant "HR" as hr
 participant "企业端页面" as web
 participant "AiController" as ai
 participant "AiMatchService" as svc
-participant "规则筛选" as rule
 participant "ChatClient(Spring AI)" as llm
-database "MySQL" as db
-
 hr -> web : 点击"AI筛选候选人"
-web -> ai : POST /api/ai/filter {jobId}
+web -> ai : POST /api/ai/filter {jobId:Long}
 ai -> svc : filter(jobId)
-svc -> db : 查询该岗位全部投递记录
-db --> svc : 投递列表+简历数据
+note over svc
+  校验岗位归属
+end note
+note over svc
+  查询该岗位投递记录+简历
+end note
 loop 每个候选人
-  svc -> rule : 硬性条件校验(学历/年龄/技能)
+  note over svc
+    规则筛选(学历/技能)
+  end note
   alt 通过规则
-    svc -> llm : 简历+岗位要求 → 生成匹配评分
-    llm --> svc : score + reason
-    svc -> db : 保存 t_ai_score
+    svc -> llm : 简历+岗位要求 → 评分
+    llm --> svc : score:Integer + reason:String
+    note over svc
+      组装 AiScore 中间数据并覆盖落库
+    end note
   else 未通过规则
-    svc -> db : 标记不符合规则
+    note over svc
+      组装 AiScore(0分+原因)落库
+    end note
   end
 end
-svc --> ai : 候选人评分列表(按分排序)
-ai --> web : 评分结果+理由
-web --> hr : 展示：高匹配候选人推荐邀约
+svc --> ai : List<Map>(applyId,status,rulePassed,aiScore,aiReason)
+ai --> web : Result(data=评分列表)
+web --> hr : 展示高匹配候选人(按分排序)
+
 @enduml

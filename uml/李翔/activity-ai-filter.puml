@@ -4,9 +4,12 @@ skinparam activityDiamondFontSize 13
 skinparam activityFontSize 13
 skinparam defaultTextAlignment center
 
+|HR|
 start
-:HR 点击"AI 筛选候选人";
+:点击"AI筛选候选人";
+|AiController|
 :POST /api/company/ai-filter/{jobId};
+|AiMatchService|
 :校验岗位归属(防越权);
 if (岗位属于当前企业?) then (否)
   :抛出异常"无权操作";
@@ -17,29 +20,28 @@ endif
 while (还有候选人?) is (是)
   :查询候选人简历;
   if (简历存在?) then (否)
-    :标记"未填写简历"，0分;
-    :落库 t_ai_score;
+    :标记"未填写简历"，0分落库;
   else (是)
-    :规则通道 checkRule;
-    if (学历命中 且 技能命中?) then (是)
-      :组装评分提示词(岗位要求+简历摘要);
-      :大模型调用评分;
+    if (通过规则筛选?) then (否)
+      :标记"不符合规则"，0分+原因落库;
+    else (是)
+      :组装评分提示词;
+      |通义千问|
+      :大模型评分;
+      |AiMatchService|
       if (调用成功且JSON可解析?) then (是)
-        :clamp 限制 0-100;
-        :解析 score + reason;
+        :clamp 0-100，解析score+reason;
       else (否)
-        :降级中性分 50;
-        :reason="AI评分暂不可用";
+        :降级中性分50;
       endif
-      :覆盖落库 t_ai_score(先删旧再插新);
-    else (否)
-      :标记"不符合规则"，0分+原因;
-      :落库 t_ai_score;
+      :覆盖落库(先删旧再插新);
     endif
   endif
 endwhile (否)
 :按评分从高到低排序;
+|AiController|
 :返回候选人评分列表;
-:HR 查看结果并发起面试邀约;
+|HR|
+:查看结果并发起面试邀约;
 stop
 @enduml

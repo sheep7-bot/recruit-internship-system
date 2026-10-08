@@ -3,6 +3,8 @@ package com.recruit.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.recruit.entity.Resume;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Service;
 
@@ -11,6 +13,18 @@ import org.springframework.stereotype.Service;
 // 思考：@Service 标注这是业务层，Spring 启动时创建实例，供 AiController 注入
 @Service
 public class AiResumeServiceImpl implements AiResumeService {
+
+    // 思考：日志器——解析失败时打印真实异常，方便排查（不能只吞异常留一句提示）
+    private static final Logger log = LoggerFactory.getLogger(AiResumeServiceImpl.class);
+
+    // 思考：字段长度上限 = t_resume 表对应列的长度（varchar 长度）
+    // 思考：大模型经常不遵守"200字以内"，抽出来的经历可能几百上千字，
+    // 思考：直接写库会触发 Data too long 报错（这正是"AI 解析暂时不可用"的历史根因），所以回填前统一截断
+    private static final int MAX_NAME = 50;
+    private static final int MAX_SCHOOL = 100;
+    private static final int MAX_EDU = 50;
+    private static final int MAX_SKILLS = 200;
+    private static final int MAX_EXPERIENCE = 500;
 
     // 思考：SpringAI 的聊天客户端——发提示词调大模型就靠它（全局实例带默认人设，见 ChatClientConfig）
     private final ChatClient chatClient;
@@ -56,19 +70,27 @@ public class AiResumeServiceImpl implements AiResumeService {
             // 思考：cleanJson 去掉模型可能带的 ```json 包裹，再转 JsonNode
             JsonNode node = objectMapper.readTree(cleanJson(answer));
             // 思考：逐个字段回填——textOrKeep/intOrKeep：模型没抽出来就保留原值，不覆盖学生手填内容
-            resume.setName(textOrKeep(node.get("name"), resume.getName()));
-            resume.setSchool(textOrKeep(node.get("school"), resume.getSchool()));
-            resume.setEdu(textOrKeep(node.get("edu"), resume.getEdu()));
+            // 思考：cut() 按表列长截断，防止超长字段写库报 Data too long
+            resume.setName(cut(textOrKeep(node.get("name"), resume.getName()), MAX_NAME));
+            resume.setSchool(cut(textOrKeep(node.get("school"), resume.getSchool()), MAX_SCHOOL));
+            resume.setEdu(cut(textOrKeep(node.get("edu"), resume.getEdu()), MAX_EDU));
             resume.setAge(intOrKeep(node.get("age"), resume.getAge()));
-            resume.setSkills(textOrKeep(node.get("skills"), resume.getSkills()));
-            resume.setExperience(textOrKeep(node.get("experience"), resume.getExperience()));
+            resume.setSkills(cut(textOrKeep(node.get("skills"), resume.getSkills()), MAX_SKILLS));
+            resume.setExperience(cut(textOrKeep(node.get("experience"), resume.getExperience()), MAX_EXPERIENCE));
             // 思考：更新数据库并返回更新后的简历给前端展示
             resumeService.update(resume);
             return resume;
         } catch (Exception e) {
+            // 思考：打印真实异常（HTTP 状态码/JSON 解析/数据库超长），不要再把原因吞掉
+            log.error("AI 简历解析失败, resumeId={}", resumeId, e);
             // 思考：AI 降级：解析失败不影响主流程，提示学生手动填写结构化字段
             throw new RuntimeException("AI 解析暂时不可用，请手动填写学历/技能/经历字段");
         }
+    }
+
+    // 思考：截断工具——超过 max 就直接砍掉多余部分，保证能写进 varchar 列
+    private String cut(String v, int max) {
+        return v != null && v.length() > max ? v.substring(0, max) : v;
     }
 
     // 思考：清理工具——去掉大模型可能带的 ```json 代码块包裹，只留 JSON 本体

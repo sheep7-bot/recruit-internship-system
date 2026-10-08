@@ -1,12 +1,11 @@
 @startuml 数据库ER图
 skinparam defaultFontName "Microsoft YaHei"
-skinparam classAttributeIconSize 0
 hide circle
-skinparam linetype ortho
-skinparam defaultFontSize 14
+skinparam classAttributeIconSize 0
+skinparam defaultFontSize 12
 
 class "t_user 用户表" as user {
-  * id : BIGINT PK
+  + id : BIGINT PK
   --
   username : VARCHAR(50) 用户名
   password : VARCHAR(100) 密码
@@ -18,7 +17,7 @@ class "t_user 用户表" as user {
 }
 
 class "t_company 企业表" as company {
-  * id : BIGINT PK
+  + id : BIGINT PK
   --
   user_id : BIGINT FK 企业账号
   name : VARCHAR(100) 企业名称
@@ -30,7 +29,7 @@ class "t_company 企业表" as company {
 }
 
 class "t_resume 简历表" as resume {
-  * id : BIGINT PK
+  + id : BIGINT PK
   --
   user_id : BIGINT FK 学生
   name : VARCHAR(50) 姓名
@@ -44,7 +43,7 @@ class "t_resume 简历表" as resume {
 }
 
 class "t_job 岗位表" as job {
-  * id : BIGINT PK
+  + id : BIGINT PK
   --
   company_id : BIGINT FK 企业
   title : VARCHAR(100) 岗位名称
@@ -54,12 +53,12 @@ class "t_job 岗位表" as job {
   skills : VARCHAR(200) 技能要求
   edu_req : VARCHAR(50) 学历要求
   description : VARCHAR(500) 描述
-  status : INT 状态(发布/下架)
+  status : INT 状态
   create_time : DATETIME
 }
 
 class "t_apply 投递表" as apply {
-  * id : BIGINT PK
+  + id : BIGINT PK
   --
   student_id : BIGINT FK 学生
   job_id : BIGINT FK 岗位
@@ -68,7 +67,7 @@ class "t_apply 投递表" as apply {
 }
 
 class "t_ai_score AI评分表" as aiscore {
-  * id : BIGINT PK
+  + id : BIGINT PK
   --
   apply_id : BIGINT FK 投递
   score : INT AI匹配分

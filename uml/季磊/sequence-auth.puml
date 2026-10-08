@@ -1,51 +1,68 @@
 @startuml 学生注册登录时序图
 skinparam defaultFontName "Microsoft YaHei"
+hide footbox
+<style>
+participant {
+  FontColor white
+  BorderColor white
+  BackgroundColor white
+}
+sequenceDiagram {
+  FontColor black
+}
+</style>
 skinparam sequenceMessageAlign center
-
-actor "学生" as stu
+participant "学生" as stu
 participant "登录/注册页" as web
 participant "AuthController" as auth
 participant "UserServiceImpl" as svc
 participant "PasswordUtil(BCrypt)" as bc
-database "MySQL" as db
 participant "TokenStore(Redis)" as redis
-
 alt 注册流程
   stu -> web : 填写用户名/密码/姓名
-  web -> auth : POST /api/auth/register
-  auth -> svc : register(req)
-  svc -> svc : 校验用户名密码非空、角色白名单
-  svc -> db : selectCount 查用户名是否重复
-  alt 已存在
+  web -> auth : POST /api/auth/register {role,username,password,name}
+  auth -> svc : register(req:Map)
+  note over svc
+    校验参数/角色白名单
+  end note
+  note over svc
+    selectCount 查重
+  end note
+  alt 用户名已存在
     svc --> auth : 抛异常"用户名已被注册"
   else 不重复
-    svc -> bc : encode(password) BCrypt加密
-    bc --> svc : 密文
-    svc -> db : INSERT t_user
+    svc -> bc : encode(password) → 密文:String
+    note over svc
+      组装 user:User 并落库
+    end note
     svc --> auth : "注册成功"
-    auth --> web : Result(注册成功)
+    auth --> web : Result("注册成功")
   end
 else 登录流程
   stu -> web : 输入用户名/密码
-  web -> auth : POST /api/auth/login
+  web -> auth : POST /api/auth/login {username,password}
   auth -> svc : login(username, password)
-  svc -> db : SELECT * FROM t_user WHERE username=?
+  note over svc
+    按用户名查 user:User
+  end note
   alt 用户不存在或密码不匹配
     svc --> auth : 抛异常"用户名或密码错误"
   else 校验通过
     svc -> bc : matches(password, 密文)
     opt 旧明文数据
-      svc -> bc : encode 升级为BCrypt并写回
+      svc -> bc : encode 升级写回
     end
     alt 账号被禁用
       svc --> auth : 抛异常"账号已被禁用"
     end
-    svc -> redis : tokenStore.create(user) 存24h
-    redis --> svc : token
-    svc -> svc : user.setPassword(null) 抹掉密码
-    svc --> auth : {token, user}
-    auth --> web : Result({token, user})
-    web --> stu : 登录成功进入对应工作台
+    svc -> redis : tokenStore.create(user) → token:String(24h)
+    note over svc
+      user.setPassword(null)
+    end note
+    svc --> auth : data:{token, user}
+    auth --> web : Result({token,user})
+    web --> stu : 登录成功进入工作台
   end
 end
+
 @enduml

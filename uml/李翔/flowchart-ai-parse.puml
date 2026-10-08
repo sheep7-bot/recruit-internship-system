@@ -1,38 +1,35 @@
 @startuml AI简历解析核心算法流程图
 skinparam defaultFontName "Microsoft YaHei"
-skinparam activityDiamondFontSize 13
-skinparam activityFontSize 13
-skinparam defaultTextAlignment center
+skinparam roundCorner 0
 
 start
-:输入 resumeId;
-:查简历，取出 content 原文;
-if (简历存在且内容非空?) then (否)
-  :抛异常"简历内容为空/不存在";
-  stop
-else (是)
+:开始;
+:输入resumeId;
+:查简历并取content原文;
+if (简历存在且内容非空?) then
+  :组装提示词(只输出JSON);
+  :调用大模型prompt().call();
+  if (调用成功?) then
+    :cleanJson去代码围栏;
+    :截取第一个{到最后一个};
+    :Jackson解析JSON;
+    if (解析成功?) then
+      :逐字段textOrKeep/intOrKeep回填;
+      if (字段为空或无效?) then
+        :保留学生手填原值;
+      else
+      endif
+      :update落库;
+      :返回解析后的简历;
+    else
+      :抛异常：AI解析暂不可用;
+    endif
+  else
+    :抛异常：AI解析暂不可用;
+  endif
+else
+  :抛异常：简历内容为空;
 endif
-:组装提示词(只输出JSON、缺失留空、禁止编造);
-:chatClient.prompt().call() 调大模型;
-if (调用成功?) then (否)
-  :抛异常"AI解析暂不可用，请手动填写";
-  stop
-else (是)
-endif
-:cleanJson 去 ```json 包裹;
-:截取第一个{到最后一个}之间的内容;
-:objectMapper.readTree 解析 JSON;
-if (解析成功?) then (否)
-  :抛异常"AI解析暂不可用，请手动填写";
-  stop
-else (是)
-endif
-:逐字段 textOrKeep/intOrKeep 回填;
-if (字段为空/无效?) then (是)
-  :保留学生手填原值(不覆盖);
-else (否)
-endif
-:resumeService.update 落库;
-:返回解析后的简历;
+:结束;
 stop
 @enduml

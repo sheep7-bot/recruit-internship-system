@@ -1,24 +1,22 @@
 @startuml 岗位归属校验核心算法流程图
 skinparam defaultFontName "Microsoft YaHei"
-skinparam activityDiamondFontSize 13
-skinparam activityFontSize 13
-skinparam defaultTextAlignment center
+skinparam roundCorner 0
 
 start
-:输入 companyUserId、jobId;
-:查当前登录企业的档案;
-:按 jobId 查岗位;
-if (岗位存在?) then (否)
-  :抛异常"岗位不存在";
-  stop
-else (是)
+:开始;
+:输入companyUserId、jobId;
+:查当前登录企业档案company;
+:按jobId查岗位job;
+if (岗位存在?) then
+  :比对job.companyId与company.id;
+  if (岗位属于当前企业?) then
+    :校验通过，继续执行操作;
+  else
+    :抛异常：无权操作;
+  endif
+else
+  :抛异常：岗位不存在;
 endif
-:比对 job.companyId 与 company.id;
-if (岗位属于当前企业?) then (否)
-  :抛异常"岗位不属于当前企业，无权操作";
-  stop
-else (是)
-endif
-:校验通过，继续执行操作;
+:结束;
 stop
 @enduml

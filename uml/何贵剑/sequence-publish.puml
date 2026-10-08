@@ -1,28 +1,48 @@
 @startuml 企业发布岗位时序图
 skinparam defaultFontName "Microsoft YaHei"
+hide footbox
+<style>
+participant {
+  FontColor white
+  BorderColor white
+  BackgroundColor white
+}
+sequenceDiagram {
+  FontColor black
+}
+</style>
 skinparam sequenceMessageAlign center
-
-actor "HR" as hr
+participant "HR" as hr
 participant "企业端岗位管理页" as web
 participant "CompanyController" as ctl
 participant "JobServiceImpl" as svc
-database "MySQL" as db
-participant "Redis" as redis
-
-hr -> web : 填写岗位信息(标题/城市/薪资/技能要求等)
-web -> ctl : POST /api/company/jobs
+hr -> web : 填写岗位信息(标题/城市/薪资/技能)
+web -> ctl : POST /api/company/jobs {job:Job}
 ctl -> svc : publish(companyUserId, job)
-svc -> db : SELECT t_company WHERE user_id=companyUserId
+note over svc
+  查企业档案 company:Company
+end note
 alt 企业档案不存在
   svc --> ctl : 抛异常"企业信息不存在"
 else 存在
-  svc -> svc : job.setId(null) 清除前端假id
-  svc -> svc : job.setCompanyId(公司id) 服务端归属
-  svc -> svc : job.setStatus(0) 强制待审核
-  svc -> db : INSERT t_job
-  svc -> redis : evictJobCache 清除搜索缓存
+  note over svc
+    job.setId(null) 清前端假id
+  end note
+  note over svc
+    job.setCompanyId(公司id)
+  end note
+  note over svc
+    job.setStatus(0) 待审核
+  end note
+  note over svc
+    jobMapper.insert(job)
+  end note
+  note over svc
+    evictJobCache 清搜索缓存
+  end note
   svc --> ctl : void
   ctl --> web : Result("发布成功，等待管理员审核")
   web --> hr : 提示"待管理员审核"
 end
+
 @enduml

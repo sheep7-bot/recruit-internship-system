@@ -1,44 +1,41 @@
 @startuml AI双通道筛选核心算法流程图
 skinparam defaultFontName "Microsoft YaHei"
-skinparam activityDiamondFontSize 13
-skinparam activityFontSize 13
-skinparam defaultTextAlignment center
+skinparam roundCorner 0
 
 start
-:输入 jobId、companyUserId;
-:查岗位 job，查企业档案;
-if (岗位存在且属于当前企业?) then (否)
-  :抛异常"无权操作";
-  stop
-else (是)
-endif
-:查全部投递 applyList;
-:result 列表初始化;
-repeat :取出一个投递 apply;
-  :查候选人简历 resume;
-  if (简历为空?) then (是)
-    :aiScore=0，reason="未填写简历";
-  else (否)
-    :规则通道 checkRule(job, resume);
-    if (学历包含岗位要求关键词? 且 技能至少命中一项?) then (否)
-      :aiScore=0，reason="未通过规则筛选";
-    else (是)
-      :组装提示词(只输出JSON) + resumeBrief 摘要;
-      :chatClient.prompt().call() 调大模型;
-      if (调用成功且JSON可解析?) then (是)
-        :cleanJson 清洗+截取;
-        :score=clamp(解析分数, 0-100);
-        :reason=解析理由;
-      else (否)
-        :score=50（降级）;
-        :reason="AI评分服务暂不可用";
+:开始;
+:输入jobId、companyUserId;
+:查岗位job并校验归属;
+if (岗位存在且属于当前企业?) then
+  :查全部投递applyList;
+  :初始化result列表;
+  :取出一个投递apply;
+  while (还有未处理的投递?)
+    :查候选人简历resume;
+    if (简历为空?) then
+      :aiScore=0，reason=未填写简历;
+    else
+      :规则通道checkRule;
+      if (学历命中且技能命中?) then
+        :组装评分提示词并调用大模型;
+        if (调用成功且JSON可解析?) then
+          :score=clamp(0-100)，reason=理由;
+        else
+          :score=50降级;
+        endif
+      else
+        :aiScore=0，reason=未通过规则;
       endif
     endif
-  endif
-  :saveScore 先删旧再插新落库;
-  :组装 item 加入 result;
-repeat while (还有投递?) is (是) not (否)
-:result 按 aiScore 降序排序;
-:返回 result;
+    :saveScore覆盖落库;
+    :组装item加入result;
+    :取出下一个投递;
+  endwhile
+  :result按aiScore降序排序;
+  :返回result;
+else
+  :抛异常：无权操作;
+endif
+:结束;
 stop
 @enduml

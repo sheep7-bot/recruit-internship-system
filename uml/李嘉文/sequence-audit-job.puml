@@ -1,40 +1,59 @@
 @startuml 岗位审核时序图
 skinparam defaultFontName "Microsoft YaHei"
+hide footbox
+<style>
+participant {
+  FontColor white
+  BorderColor white
+  BackgroundColor white
+}
+sequenceDiagram {
+  FontColor black
+}
+</style>
 skinparam sequenceMessageAlign center
-
-actor "管理员" as admin
+participant "管理员" as admin
 participant "管理端岗位审核页" as web
 participant "AdminController" as ctl
 participant "JobServiceImpl" as svc
-database "MySQL" as db
-participant "Redis" as redis
-
 admin -> web : 打开岗位审核页
 web -> ctl : GET /api/admin/jobs?status=0
 ctl -> svc : listByStatus(0)
-svc -> db : selectList(status=0, 倒序)
-svc -> svc : fillCompanyName 补企业名
-svc --> ctl : List<Map>
-ctl --> web : Result
+note over svc
+  selectList(status=0, 倒序)
+end note
+note over svc
+  fillCompanyName 补企业名
+end note
+svc --> ctl : List<Map> 待审核岗位
+ctl --> web : Result(data=List)
 web --> admin : 展示待审核岗位
 
 admin -> web : 点击"通过/驳回"
-web -> ctl : PUT /api/admin/jobs/{id}/audit {pass}
+web -> ctl : PUT /api/admin/jobs/{id}/audit {pass:Boolean}
 ctl -> svc : audit(jobId, pass)
-svc -> db : SELECT t_job WHERE id=jobId
+note over svc
+  查岗位 job:Job
+end note
 alt 岗位不存在
   svc --> ctl : 抛异常"岗位不存在"
 else 存在
-  svc -> svc : setStatus(pass ? 1 : 2)
-  svc -> db : UPDATE t_job
-  svc -> redis : evictJobCache 清搜索缓存
+  note over svc
+    job.setStatus(pass?1:2)
+  end note
+  note over svc
+    updateById 落库
+  end note
+  note over svc
+    evictJobCache 清搜索缓存
+  end note
   svc --> ctl : void
   ctl --> web : Result("审核完成")
 end
-
 alt pass=true
   web --> admin : 上架，学生端立即可见
 else pass=false
   web --> admin : 驳回
 end
+
 @enduml

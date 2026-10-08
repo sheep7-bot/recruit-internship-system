@@ -1,35 +1,60 @@
 @startuml 控制层与业务层类图
 skinparam defaultFontName "Microsoft YaHei"
 skinparam classAttributeIconSize 0
-skinparam defaultFontSize 15
+skinparam defaultFontSize 13
 
 package "Controller 控制层" {
   class AuthController {
-    +login(username, password) : Result
-    +register(user) : Result
+    -userService : UserService
+    +login(req : Map<String,String>) : Result
+    +register(req : Map<String,String>) : Result
+    +logout(token : String) : Result
   }
   class StudentController {
-    +uploadResume(resume) : Result
-    +searchJobs(keyword, city, type) : Result
-    +applyJob(jobId) : Result
-    +listMyApplies(studentId) : Result
+    -jobService : JobService
+    -applyService : ApplyService
+    -resumeService : ResumeService
+    +searchJobs(keyword, city, type, page, size) : Result
+    +jobDetail(id : Long) : Result
+    +apply(jobId : Long) : Result
+    +myApplies(page, size) : Result
+    +myResume() : Result
+    +saveResume(resume : Resume) : Result
   }
   class CompanyController {
-    +publishJob(job) : Result
-    +offlineJob(jobId) : Result
-    +listApplies(jobId) : Result
-    +invite(applyId) : Result
+    -jobService : JobService
+    -applyService : ApplyService
+    -aiMatchService : AiMatchService
+    +info() : Result
+    +myJobs() : Result
+    +publish(job : Job) : Result
+    +update(job : Job) : Result
+    +offline(jobId : Long) : Result
+    +applies(jobId, page, size) : Result
+    +updateApplyStatus(applyId, status) : Result
+    +aiFilter(jobId : Long) : Result
   }
   class AdminController {
+    -adminService : AdminService
+    -jobService : JobService
+    +companies(approved : Integer) : Result
     +auditCompany(companyId, pass) : Result
+    +jobs(status : Integer) : Result
     +auditJob(jobId, pass) : Result
-    +listUsers() : Result
-    +statistics() : Result
+    +users() : Result
+    +updateUserStatus(userId, status) : Result
+    +stats() : Result
   }
   class AiController {
-    +chat(question) : Map
+    -chatClient : ChatClient
+    -aiResumeService : AiResumeService
+    -aiMatchService : AiMatchService
+    -redis : StringRedisTemplate
+    +chat(question) : Result
+    +chatStream(question) : Flux<String>
     +parseResume(resumeId) : Result
-    +filterCandidates(jobId) : Result
+    +recommend() : Result
+    +applyAdvice(applyId) : Result
   }
   AuthController -[hidden]d- StudentController
   StudentController -[hidden]d- CompanyController
@@ -39,31 +64,40 @@ package "Controller 控制层" {
 
 package "Service 业务层" {
   class UserService {
-    +login(username, password) : User
-    +register(user) : void
-    +listAll() : List<User>
+    +login(username, password) : Map
+    +register(req : Map) : void
+    +logout(token : String) : void
   }
   class ResumeService {
-    +save(resume) : void
     +getByUserId(userId) : Resume
+    +save(userId, form) : void
+    +getById(id) : Resume
+    +update(resume : Resume) : void
   }
   class JobService {
-    +publish(job) : void
-    +search(keyword, city, type) : List<Job>
+    +publish(companyUserId, job) : void
+    +update(companyUserId, form) : void
+    +offline(companyUserId, jobId) : void
+    +search(keyword, city, type, page, size) : Map
+    +detail(jobId) : Map
+    +listByCompany(companyUserId) : List
+    +listByStatus(status) : List
     +audit(jobId, pass) : void
+    +getCompanyByUserId(companyUserId) : Company
   }
   class ApplyService {
     +apply(studentId, jobId) : void
-    +listByJob(jobId) : List<Apply>
-    +updateStatus(applyId, status) : void
+    +listByStudent(studentId, page, size) : Map
+    +listByJob(companyUserId, jobId, page, size) : Map
+    +updateStatus(companyUserId, applyId, status) : void
   }
   class AiResumeService {
-    -promptTemplate : String
-    +parse(content) : Resume
+    +parse(resumeId) : Resume
   }
   class AiMatchService {
-    +filter(jobId) : List<AiScore>
-    +score(resume, job) : AiScore
+    +filter(companyUserId, jobId) : List
+    +recommend(studentId) : List
+    +applyAdvice(studentId, applyId) : String
   }
   UserService -[hidden]d- ResumeService
   ResumeService -[hidden]d- JobService
@@ -72,15 +106,15 @@ package "Service 业务层" {
   AiResumeService -[hidden]d- AiMatchService
 }
 
-AuthController --> UserService
-StudentController --> ResumeService
-StudentController --> JobService
-StudentController --> ApplyService
-CompanyController --> JobService
-CompanyController --> ApplyService
-CompanyController --> AiMatchService
-AdminController --> UserService
-AdminController --> JobService
-AiController --> AiResumeService
-AiController --> AiMatchService
+AuthController -- UserService
+StudentController -- ResumeService
+StudentController -- JobService
+StudentController -- ApplyService
+CompanyController -- JobService
+CompanyController -- ApplyService
+CompanyController -- AiMatchService
+AdminController -- UserService
+AdminController -- JobService
+AiController -- AiResumeService
+AiController -- AiMatchService
 @enduml

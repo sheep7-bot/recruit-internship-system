@@ -1,32 +1,30 @@
 @startuml 岗位搜索缓存核心算法流程图
 skinparam defaultFontName "Microsoft YaHei"
-skinparam activityDiamondFontSize 13
-skinparam activityFontSize 13
-skinparam defaultTextAlignment center
+skinparam roundCorner 0
 
 start
-:输入 keyword/city/type/page/size;
-:分页兜底 page=max(page,1) size=合法化;
-:拼接缓存key cache:jobs:{keyword}|{city}|{type}|p{page}s{size};
-:GET Redis 缓存;
-if (缓存命中?) then (是)
-  :反序列化 JSON 返回;
-  stop
-else (否)
+:开始;
+:输入keyword/city/type/page/size;
+:分页参数兜底;
+:拼接缓存key;
+:GET Redis缓存;
+if (缓存命中?) then
+  :反序列化JSON返回Map;
+else
+  :组装LambdaQueryWrapper;
+  :eq(status=1)动态条件;
+  :关键词like title or skills;
+  :orderByDesc(createTime);
+  :selectPage分页查库;
+  if (查询成功?) then
+    :fillCompanyName补企业名;
+    :组装Map{records,total};
+    :SET Redis缓存TTL5分钟;
+    :返回结果;
+  else
+    :异常处理;
+  endif
 endif
-:组装 LambdaQueryWrapper;
-:eq(status=1) 动态条件;
-:关键词 like title OR like skills;
-:orderByDesc(createTime);
-:selectPage 分页查库;
-if (查询成功?) then (是)
-  :fillCompanyName 补企业名;
-  :组装 {records, total};
-  :SET Redis 缓存 TTL 5分钟;
-  :返回结果;
-  stop
-else (否)
-  :异常处理;
-  stop
-endif
+:结束;
+stop
 @enduml

@@ -1,39 +1,51 @@
 @startuml AI简历解析时序图
 skinparam defaultFontName "Microsoft YaHei"
+hide footbox
+<style>
+participant {
+  FontColor white
+  BorderColor white
+  BackgroundColor white
+}
+sequenceDiagram {
+  FontColor black
+}
+</style>
 skinparam sequenceMessageAlign center
-
-actor "学生" as stu
+participant "学生" as stu
 participant "学生端页面" as web
 participant "AiController" as ai
 participant "AiResumeServiceImpl" as svc
 participant "ResumeServiceImpl" as rsvc
 participant "ChatClient(Spring AI)" as llm
-database "MySQL" as db
-
-stu -> web : 粘贴简历原文并保存
+stu -> web : 粘贴简历原文 content:String
 stu -> web : 点击"AI解析简历"
-web -> ai : POST /api/ai/parse-resume/{resumeId}
-ai -> svc : parse(resumeId)
+web -> ai : POST /api/ai/parse-resume/{resumeId:Long}
+ai -> svc : parse(resumeId:Long)
 svc -> rsvc : getById(resumeId)
-rsvc -> db : SELECT t_resume
-db --> rsvc : 简历对象
-rsvc --> svc : resume
 alt 简历存在且内容非空
-  svc -> llm : 提示词(只输出JSON，缺失留空) + 简历原文
-  llm --> svc : JSON字符串
+  rsvc --> svc : resume:Resume(content, edu, skills…)
+  svc -> llm : 提示词(JSON约束) + 简历原文
   alt 调用成功
-    svc -> svc : cleanJson 清洗+截取 {..}
-    svc -> svc : Jackson 解析为 JsonNode
-    svc -> svc : textOrKeep/intOrKeep 逐字段回填
-    svc -> rsvc : update(resume)
-    rsvc -> db : UPDATE t_resume
-    svc --> ai : 回填后的简历
-    ai --> web : Result(简历)
-    web --> stu : 结构化字段自动回填展示
+    llm --> svc : json:String(姓名/学历/技能/经历)
+    note over svc
+      cleanJson 清洗+截取 JSON
+    end note
+    note over svc
+      解析为 node:JsonNode
+    end note
+    note over svc
+      回填 resume 字段(原值兜底)
+    end note
+    svc -> rsvc : update(resume:Resume)
+    svc --> ai : resume:Resume(结构化回填后)
+    ai --> web : Result(code,msg,data=Resume)
+    web --> stu : 展示回填结果
   else 解析失败
-    svc --> ai : 提示手动填写（保留手填原值）
+    svc --> ai : 抛异常"手动填写"
   end
 else 简历不存在/内容为空
-  svc --> ai : 抛出异常"简历内容为空"
+  svc --> ai : 抛异常"简历内容为空"
 end
+
 @enduml

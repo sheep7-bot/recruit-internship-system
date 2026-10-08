@@ -1,38 +1,61 @@
 @startuml 季磊-学生端设计类图
 skinparam defaultFontName "Microsoft YaHei"
 skinparam classAttributeIconSize 0
-skinparam defaultFontSize 14
+skinparam defaultFontSize 12
+skinparam defaultFontSize 12
 
 package "Controller 控制层" {
-  class AuthController {
-    +login(username, password) : Result
-    +register(user) : Result
-  }
   class StudentController {
+    -jobService : JobService
+    -applyService : ApplyService
+    -resumeService : ResumeService
     +searchJobs(keyword, city, type, page, size) : Result
-    +jobDetail(id) : Result
-    +apply(jobId) : Result
+    +jobDetail(id : Long) : Result
+    +apply(jobId : Long) : Result
     +myApplies(page, size) : Result
     +myResume() : Result
-    +saveResume(resume) : Result
+    +saveResume(resume : Resume) : Result
+  }
+  class AuthController {
+    -userService : UserService
+    +login(req : Map) : Result
+    +register(req : Map) : Result
+    +logout(token : String) : Result
   }
 }
 
 package "Service 业务层" {
   class UserServiceImpl {
+    -userMapper : UserMapper
+    -companyMapper : CompanyMapper
+    -tokenStore : TokenStore
     +login(username, password) : Map
-    +register(req) : void
-    +logout(token) : void
+    +register(req : Map) : void
+    +logout(token : String) : void
   }
   class ResumeServiceImpl {
+    -resumeMapper : ResumeMapper
     +getByUserId(userId) : Resume
     +save(userId, form) : void
+    +getById(id) : Resume
+    +update(resume) : void
   }
   class JobServiceImpl {
+    -jobMapper : JobMapper
+    -companyMapper : CompanyMapper
+    -redis : StringRedisTemplate
+    -mapper : ObjectMapper
     +search(keyword, city, type, page, size) : Map
     +detail(jobId) : Map
+    -fillCompanyName(jobs) : List
   }
   class ApplyServiceImpl {
+    -applyMapper : ApplyMapper
+    -jobMapper : JobMapper
+    -resumeMapper : ResumeMapper
+    -userMapper : UserMapper
+    -aiScoreMapper : AiScoreMapper
+    -companyMapper : CompanyMapper
     +apply(studentId, jobId) : void
     +listByStudent(studentId, page, size) : Map
   }
@@ -49,16 +72,34 @@ package "entity 实体层" {
   class User {
     -id : Long
     -username : String
+    -password : String
     -role : String
+    -name : String
+    -phone : String
     -status : Integer
+    -createTime : LocalDateTime
+    +getId() : Long
+    +setId(id : Long) : void
+    +getUsername() : String
+    +getRole() : String
+    +getName() : String
+    +getStatus() : Integer
   }
   class Resume {
     -id : Long
     -userId : Long
     -name : String
+    -school : String
     -edu : String
+    -age : Integer
     -skills : String
+    -experience : String
     -content : String
+    +getId() : Long
+    +getUserId() : Long
+    +getContent() : String
+    +getSkills() : String
+    +getEdu() : String
   }
   class Job {
     -id : Long
@@ -67,28 +108,35 @@ package "entity 实体层" {
     -city : String
     -salary : String
     -status : Integer
+    +getId() : Long
+    +getTitle() : String
+    +getCity() : String
+    +getStatus() : Integer
   }
   class Apply {
     -id : Long
     -studentId : Long
     -jobId : Long
     -status : String
+    +getId() : Long
+    +getStatus() : String
+    +getApplyTime() : LocalDateTime
   }
 }
 
 class "TokenStore（Redis 会话）" as token
 class "StringRedisTemplate（搜索缓存）" as redis
 
-AuthController --> UserServiceImpl
-StudentController --> JobServiceImpl
-StudentController --> ApplyServiceImpl
-StudentController --> ResumeServiceImpl
+StudentController -- JobServiceImpl
+StudentController -- ApplyServiceImpl
+StudentController -- ResumeServiceImpl
+AuthController -- UserServiceImpl
 
-UserServiceImpl --> UserMapper
-UserServiceImpl --> token
-ResumeServiceImpl --> ResumeMapper
-JobServiceImpl --> JobMapper
-JobServiceImpl --> redis : cache:jobs:
-ApplyServiceImpl --> ApplyMapper
-ApplyServiceImpl --> JobMapper
+UserServiceImpl -- UserMapper
+UserServiceImpl -- token
+ResumeServiceImpl -- ResumeMapper
+JobServiceImpl -- JobMapper
+JobServiceImpl -- redis : cache:jobs:
+ApplyServiceImpl -- ApplyMapper
+ApplyServiceImpl -- JobMapper
 @enduml

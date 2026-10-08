@@ -1,42 +1,70 @@
 @startuml 企业查看投递并AI筛选时序图
 skinparam defaultFontName "Microsoft YaHei"
+hide footbox
+<style>
+participant {
+  FontColor white
+  BorderColor white
+  BackgroundColor white
+}
+sequenceDiagram {
+  FontColor black
+}
+</style>
 skinparam sequenceMessageAlign center
-
-actor "HR" as hr
+participant "HR" as hr
 participant "企业端投递筛选页" as web
 participant "CompanyController" as ctl
 participant "ApplyServiceImpl" as asvc
 participant "AiMatchServiceImpl" as aivc
-database "MySQL" as db
-participant "通义千问" as llm
-
 hr -> web : 进入某岗位的投递列表
-web -> ctl : GET /api/company/applies?jobId=&page&size
+web -> ctl : GET /api/company/applies?jobId&page&size
 ctl -> asvc : listByJob(companyUserId, jobId, page, size)
-asvc -> asvc : checkJobOwned 归属校验
+note over asvc
+  checkJobOwned 归属校验
+end note
 alt 岗位不属于当前企业
   asvc --> ctl : 抛异常"无权操作"
 else 校验通过
-  asvc -> db : selectPage 查该岗位投递
-  asvc -> db : 补学生姓名/简历/AI评分
-  asvc --> ctl : {records, total}
-  ctl --> web : Result
+  note over asvc
+    分页查投递 applyList
+  end note
+  note over asvc
+    补学生姓名/简历/AI评分
+  end note
+  asvc --> ctl : Map{records, total}
+  ctl --> web : Result(data=Map)
   web --> hr : 展示候选人列表
 end
 
 hr -> web : 点击"AI筛选候选人"
 web -> ctl : POST /api/company/ai-filter/{jobId}
 ctl -> aivc : filter(companyUserId, jobId)
-aivc -> aivc : 归属校验
+note over aivc
+  归属校验
+end note
 loop 每个候选人
-  aivc -> aivc : 规则通道 checkRule
-  opt 通过规则
-    aivc -> llm : 评分提示词
-    llm --> aivc : score+reason
+  note over aivc
+    规则通道 checkRule
+  end note
+  alt 通过规则
+    note over aivc
+      组装提示词调大模型
+    end note
+    note over aivc
+      score+reason 组装 AiScore
+    end note
+  else 未通过
+    note over aivc
+      组装 AiScore(0分+原因)
+    end note
   end
-  aivc -> db : 覆盖落库 t_ai_score
+  note over aivc
+    覆盖落库 t_ai_score
+  end note
 end
-aivc --> ctl : 按分排序的候选人列表
-ctl --> web : Result
+aivc --> ctl : List<Map>(按分排序)
+ctl --> web : Result(data=评分列表)
 web --> hr : 高匹配候选人置顶展示
+
 @enduml

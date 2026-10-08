@@ -1,27 +1,10 @@
 @startuml 数据访问层与实体层类图
 skinparam defaultFontName "Microsoft YaHei"
 skinparam classAttributeIconSize 0
-skinparam defaultFontSize 15
-
-package "Service 业务层（数据访问依赖）" {
-  class UserService
-  class ResumeService
-  class JobService
-  class ApplyService
-  class AiResumeService
-  class AiMatchService
-  UserService -[hidden]d- ResumeService
-  ResumeService -[hidden]d- JobService
-  JobService -[hidden]d- ApplyService
-  ApplyService -[hidden]d- AiResumeService
-  AiResumeService -[hidden]d- AiMatchService
-}
+skinparam defaultFontSize 12
 
 package "Mapper 数据访问层" {
-  class UserMapper {
-    +selectOne(wrapper) : User
-    +selectList(wrapper) : List<User>
-  }
+  class UserMapper
   class CompanyMapper
   class ResumeMapper
   class JobMapper
@@ -32,6 +15,12 @@ package "Mapper 数据访问层" {
   ResumeMapper -[hidden]d- JobMapper
   JobMapper -[hidden]d- ApplyMapper
   ApplyMapper -[hidden]d- AiScoreMapper
+  note bottom of UserMapper
+    继承 BaseMapper<T>
+    提供 selectById/selectList/
+    selectPage/insert/updateById/
+    deleteById 等通用方法
+  end note
 }
 
 package "entity 实体层" {
@@ -44,6 +33,14 @@ package "entity 实体层" {
     -phone : String
     -status : Integer
     -createTime : LocalDateTime
+    +getId() : Long
+    +setId(id : Long) : void
+    +getUsername() : String
+    +setUsername(username : String) : void
+    +getRole() : String
+    +setRole(role : String) : void
+    +getStatus() : Integer
+    +setStatus(status : Integer) : void
   }
   class Company {
     -id : Long
@@ -53,6 +50,15 @@ package "entity 实体层" {
     -scale : String
     -contact : String
     -approved : Integer
+    -createTime : LocalDateTime
+    +getId() : Long
+    +setId(id : Long) : void
+    +getUserId() : Long
+    +setUserId(userId : Long) : void
+    +getName() : String
+    +setName(name : String) : void
+    +getApproved() : Integer
+    +setApproved(approved : Integer) : void
   }
   class Resume {
     -id : Long
@@ -64,6 +70,15 @@ package "entity 实体层" {
     -skills : String
     -experience : String
     -content : String
+    -createTime : LocalDateTime
+    +getId() : Long
+    +setId(id : Long) : void
+    +getUserId() : Long
+    +setUserId(userId : Long) : void
+    +getEdu() : String
+    +setEdu(edu : String) : void
+    +getSkills() : String
+    +setSkills(skills : String) : void
   }
   class Job {
     -id : Long
@@ -74,7 +89,17 @@ package "entity 实体层" {
     -type : String
     -skills : String
     -eduReq : String
+    -description : String
     -status : Integer
+    -createTime : LocalDateTime
+    +getId() : Long
+    +setId(id : Long) : void
+    +getCompanyId() : Long
+    +setCompanyId(companyId : Long) : void
+    +getSkills() : String
+    +setSkills(skills : String) : void
+    +getStatus() : Integer
+    +setStatus(status : Integer) : void
   }
   class Apply {
     -id : Long
@@ -82,12 +107,23 @@ package "entity 实体层" {
     -jobId : Long
     -status : String
     -applyTime : LocalDateTime
+    +getId() : Long
+    +setId(id : Long) : void
+    +getStatus() : String
+    +setStatus(status : String) : void
   }
   class AiScore {
     -id : Long
     -applyId : Long
     -score : Integer
     -reason : String
+    -createTime : LocalDateTime
+    +getId() : Long
+    +setId(id : Long) : void
+    +getScore() : Integer
+    +setScore(score : Integer) : void
+    +getReason() : String
+    +setReason(reason : String) : void
   }
   User -[hidden]r- Company
   Company -[hidden]d- Resume
@@ -105,21 +141,19 @@ package "AI 服务" {
   ChatClient -[hidden]d- Qwen
 }
 
-UserService --> UserMapper
-ResumeService --> ResumeMapper
-JobService --> JobMapper
-ApplyService --> ApplyMapper
-AiResumeService --> ResumeMapper
-AiMatchService --> ApplyMapper
-AiMatchService --> AiScoreMapper
+UserMapper -- User
+CompanyMapper -- Company
+ResumeMapper -- Resume
+JobMapper -- Job
+ApplyMapper -- Apply
+AiScoreMapper -- AiScore
 
-UserMapper --> User
-CompanyMapper --> Company
-ResumeMapper --> Resume
-JobMapper --> Job
-ApplyMapper --> Apply
-AiScoreMapper --> AiScore
+AiMatchService -- ChatClient : 调用
+ChatClient -- Qwen
 
-AiMatchService --> ChatClient
-ChatClient --> Qwen
+note bottom of Resume
+  content=简历全文
+  edu/skills/experience
+  =AI解析结构化字段
+end note
 @enduml

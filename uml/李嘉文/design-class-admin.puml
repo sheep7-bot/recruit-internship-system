@@ -1,13 +1,16 @@
 @startuml 李嘉文-管理端设计类图
 skinparam defaultFontName "Microsoft YaHei"
 skinparam classAttributeIconSize 0
-skinparam defaultFontSize 14
+skinparam defaultFontSize 12
+skinparam defaultFontSize 12
 
 package "Controller 控制层" {
   class AdminController {
-    +companies(approved) : Result
+    -adminService : AdminService
+    -jobService : JobService
+    +companies(approved : Integer) : Result
     +auditCompany(companyId, pass) : Result
-    +jobs(status) : Result
+    +jobs(status : Integer) : Result
     +auditJob(jobId, pass) : Result
     +users() : Result
     +updateUserStatus(userId, status) : Result
@@ -17,15 +20,25 @@ package "Controller 控制层" {
 
 package "Service 业务层" {
   class AdminServiceImpl {
-    +listCompanies(approved) : List<Company>
+    -companyMapper : CompanyMapper
+    -jobMapper : JobMapper
+    -userMapper : UserMapper
+    -applyMapper : ApplyMapper
+    -resumeMapper : ResumeMapper
+    +listCompanies(approved) : List
     +auditCompany(companyId, pass) : void
-    +listUsers() : List<User>
+    +listUsers() : List
     +updateUserStatus(userId, status) : void
     +stats() : Map
   }
   class JobServiceImpl {
-    +listByStatus(status) : List<Map>
+    -jobMapper : JobMapper
+    -companyMapper : CompanyMapper
+    -redis : StringRedisTemplate
+    +listByStatus(status) : List
     +audit(jobId, pass) : void
+    -fillCompanyName(jobs) : List
+    -evictJobCache() : void
   }
 }
 
@@ -43,38 +56,54 @@ package "entity 实体层" {
     -userId : Long
     -name : String
     -approved : Integer
+    +getId() : Long
+    +getName() : String
+    +getApproved() : Integer
+    +setApproved(approved : Integer) : void
   }
   class Job {
     -id : Long
     -companyId : Long
     -title : String
     -status : Integer
+    +getId() : Long
+    +getTitle() : String
+    +getStatus() : Integer
+    +setStatus(status : Integer) : void
   }
   class User {
     -id : Long
     -username : String
     -role : String
     -status : Integer
+    +getId() : Long
+    +getUsername() : String
+    +getRole() : String
+    +getStatus() : Integer
+    +setStatus(status : Integer) : void
+    +setPassword(password : String) : void
   }
   class Apply {
     -id : Long
     -status : String
+    +getId() : Long
   }
   class Resume {
     -id : Long
+    +getId() : Long
   }
 }
 
 class "StringRedisTemplate（清缓存）" as redis
 
-AdminController --> AdminServiceImpl
-AdminController --> JobServiceImpl
+AdminController -- AdminServiceImpl
+AdminController -- JobServiceImpl
 
-AdminServiceImpl --> CompanyMapper
-AdminServiceImpl --> JobMapper
-AdminServiceImpl --> UserMapper
-AdminServiceImpl --> ApplyMapper
-AdminServiceImpl --> ResumeMapper
-JobServiceImpl --> JobMapper
-JobServiceImpl --> redis : evictJobCache
+AdminServiceImpl -- CompanyMapper
+AdminServiceImpl -- JobMapper
+AdminServiceImpl -- UserMapper
+AdminServiceImpl -- ApplyMapper
+AdminServiceImpl -- ResumeMapper
+JobServiceImpl -- JobMapper
+JobServiceImpl -- redis : evictJobCache
 @enduml

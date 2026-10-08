@@ -4,11 +4,13 @@ skinparam activityDiamondFontSize 13
 skinparam activityFontSize 13
 skinparam defaultTextAlignment center
 
+|学生|
 start
-:学生登录学生端;
+:登录学生端;
 :岗位搜索(关键词/城市/类型);
 :浏览岗位卡片，查看详情;
 :点击"立即投递";
+|系统|
 if (岗位在招聘中 status=1?) then (否)
   :提示"该岗位不在招聘中";
   stop
@@ -19,16 +21,19 @@ if (已投递过该岗位?) then (是)
   stop
 else (否)
 endif
-:创建投递记录(status="已投递");
+:创建投递记录 apply(status="已投递");
 :投递成功;
+|学生|
 :进入"我的投递"跟踪状态;
-if (企业查看简历) then (是)
+|系统|
+if (企业查看简历?) then (是)
   :状态更新为"被查看";
 else (否)
 endif
 if (企业发起面试邀约?) then (是)
   :状态更新为"面试邀约";
-  :学生确认参加面试;
+  |学生|
+  :确认参加面试;
   stop
 else (否)
   :保持"已投递/被查看";
